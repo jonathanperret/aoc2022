@@ -1,7 +1,9 @@
 {
   "private": true,
   "scripts": {
-    "postinstall": "elm-tooling install"
+    "postinstall": "elm-tooling install",
+    "test": "elm-test-rs",
+    "test:watch": "elm-test-rs --watch"
   },
   "devDependencies": {
     "elm-tooling": "^1.10.0"
