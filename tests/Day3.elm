@@ -28,30 +28,47 @@ suite =
             ]
             ,describe "part 2"
             [
-                 test "foundInSacks" <| \_ -> (foundInSacks example1 'r') |> Expect.equal 4
+                 test "foundInSacks" <| \_ -> (foundInSacks (String.lines example1) 'r') |> Expect.equal 4
+                ,test "commonItemPrio" <| \_ -> (commonItemPrio (String.lines example1 |> List.take 3)) |> Expect.equal 18
                 ,test "example" <| \_ -> example1 |> part2 |> Expect.equal 70
-                ,skip <| test "input" <| \_ -> input |> part2 |> Expect.equal 11063
+                ,test "input" <| \_ -> input |> part2 |> Expect.equal 2363
             ]
         ]
 
 part2: String -> Int
-part2 sackStrs =
+part2 input =
+    let
+        lines = String.lines input
+
+        (_, result) = next3Sacks (lines, 0)
+    in
+        result
+
+next3Sacks: (List String, Int) -> (List String, Int)
+next3Sacks (lines, total) =
+    let
+        first3 = List.take 3 lines
+        rest = List.drop 3 lines
+    in
+        case first3 of
+            [] -> ([], total)
+            _ -> next3Sacks (rest, total + commonItemPrio first3)
+
+commonItemPrio: List String -> Int
+commonItemPrio sackStrs =
     let
         items = sackStrs
+            |> String.concat
             |> String.toList
             |> Set.fromList
             |> Set.toList
-            |> Debug.log "items"
         stats = items
             |> List.map (\item -> (item, foundInSacks sackStrs item))
-            |> Debug.log "stats"
         stats3 = stats
             |> List.filter (\(item,n) -> n == 3)
-            |> Debug.log "stats3"
         prios = stats3
             |> List.map (\(item,n) -> item)
             |> List.map itemPriority
-            |> Debug.log "prios"
     in List.sum prios
 
 itemPriority: Char -> Int
@@ -60,12 +77,10 @@ itemPriority item =
         True -> (Char.toCode item) - (Char.toCode 'a') + 1
         False -> (Char.toCode item) - (Char.toCode 'A') + 27
 
-foundInSacks: String -> Char -> Int
+foundInSacks: List String -> Char -> Int
 foundInSacks sackStrs item =
     let
-        lines = sackStrs |> String.lines
-        sacks = lines |> List.filter (String.any (\c -> c == item))
-
+        sacks = sackStrs |> List.filter (String.any (\c -> c == item))
     in List.length sacks
 
 commonPriority: String -> Int
