@@ -32,20 +32,23 @@ suite =
             ]
         ]
 
-part1 : String -> Int
-part1 input =
+parse : String -> List (List (List Int))
+parse input =
     let
         lines =
             String.lines input
 
-        parse line =
-            let
-                rangesStr = String.split "," line
-                rnges = rangesStr |> List.map (String.split "-" >> List.map (String.toInt >> Maybe.withDefault 0))
-            in rnges
+        parse1 line = line
+            |> String.split ","
+            |> List.map (String.split "-" >> List.map (String.toInt >> Maybe.withDefault 0))
 
-        pairs = lines |> List.map parse
+        pairs = lines |> List.map parse1
+    in pairs
 
+
+part1 : String -> Int
+part1 input =
+    let
         check pair = case pair of
             [[a,b],[c,d]] ->
                 (a >= c && b <= d)
@@ -53,22 +56,12 @@ part1 input =
             _ -> False
 
     in
-        List.Extra.count check pairs
+        parse input
+        |> List.Extra.count check
 
 part2 : String -> Int
 part2 input =
     let
-        lines =
-            String.lines input
-
-        parse line =
-            let
-                rangesStr = String.split "," line
-                rnges = rangesStr |> List.map (String.split "-" >> List.map (String.toInt >> Maybe.withDefault 0))
-            in rnges
-
-        pairs = lines |> List.map parse
-
         check pair = case pair of
             [[a,b],[c,d]] ->
                 (b >= c && b <= d)
@@ -76,7 +69,7 @@ part2 input =
                 || (c >= a && c <= b)
                 || (d >= a && d <= b)
             _ -> False
-
     in
-        List.Extra.count check pairs
+        parse input
+        |> List.Extra.count check
 
