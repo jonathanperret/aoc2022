@@ -1,12 +1,15 @@
 module Day4 exposing (..)
 
+import AocUtil exposing (..)
 import Day4Input exposing (input)
 import Expect
 import Fuzz
 import List.Extra
+import Parser as P exposing ((|.), (|=), Parser)
 import Set
 import Test exposing (..)
-import AocUtil exposing (..)
+import Tuple
+
 
 example1 =
     """2-4,6-8
@@ -31,34 +34,43 @@ suite =
         ]
 
 
-parse : String -> List (List (List Int))
-parse input =
+type alias Range =
+    ( Int, Int )
+
+
+rangePairs =
     let
-        lines =
-            String.lines input
+        range =
+            P.succeed Tuple.pair
+                |= P.int
+                |. P.symbol "-"
+                |= P.int
 
-        parse1 line =
-            line
-                |> String.split ","
-                |> List.map (String.split "-" >> List.map (String.toInt >> fromJust))
-
-        pairs =
-            lines |> List.map parse1
+        rangePair =
+            P.succeed Tuple.pair
+                |= range
+                |. P.symbol ","
+                |= range
     in
-    pairs
+    P.oneOf
+        [ P.succeed (::)
+            |= rangePair
+            |. P.spaces
+            |= P.lazy (\_ -> rangePairs)
+        , P.succeed [] |. P.end
+        ] |> P.map List.reverse
+
+
+parse : String -> List ( Range, Range )
+parse = P.run rangePairs >> fromOk
 
 
 part1 : String -> Int
 part1 input =
     let
-        check pair =
-            case pair of
-                [ [ a, b ], [ c, d ] ] ->
-                    (a >= c && b <= d)
-                        || (c >= a && d <= b)
-
-                _ ->
-                    False
+        check ( ( a, b ), ( c, d ) ) =
+            (a >= c && b <= d)
+                || (c >= a && d <= b)
     in
     parse input
         |> List.Extra.count check
@@ -67,16 +79,11 @@ part1 input =
 part2 : String -> Int
 part2 input =
     let
-        check pair =
-            case pair of
-                [ [ a, b ], [ c, d ] ] ->
-                    (b >= c && b <= d)
-                        || (a >= c && a <= d)
-                        || (c >= a && c <= b)
-                        || (d >= a && d <= b)
-
-                _ ->
-                    False
+        check ( ( a, b ), ( c, d ) ) =
+            (b >= c && b <= d)
+                || (a >= c && a <= d)
+                || (c >= a && c <= b)
+                || (d >= a && d <= b)
     in
     parse input
         |> List.Extra.count check
