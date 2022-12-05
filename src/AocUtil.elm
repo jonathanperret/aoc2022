@@ -11,3 +11,5 @@ fromOk x = case x of
             _ = e |> Debug.log "Err"
         in
             Debug.todo "fromOk"
+
+indexFilter pred = List.indexedMap (\i c -> if (pred i) then Just c else Nothing) >> List.filterMap identity

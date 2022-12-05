@@ -55,11 +55,10 @@ parse input =
             lines
                 |> List.Extra.splitWhen (\l -> l == "")
                 |> fromJust
-                |> (\( a, b ) -> ( a, List.drop 1 b ))
 
         crates =
             cratesLines
-                |> List.map (\line -> line |> String.Extra.break 4 |> List.map (String.toList >> List.Extra.getAt 1 >> fromJust))
+                |> List.map (String.toList >> indexFilter (modBy 4 >> (==) 1))
                 |> List.reverse
                 |> List.drop 1
                 |> List.Extra.transpose
@@ -67,15 +66,15 @@ parse input =
                 |> List.map List.reverse
 
         parseInstr line =
-            case String.words line |> List.map String.toInt of
-                [ _, Just c, _, Just f, _, Just t ] ->
+            case String.words line |> List.filterMap String.toInt of
+                [ c, f, t ] ->
                     ( c, f - 1, t - 1 )
 
                 _ ->
                     Debug.todo line
 
         instrs =
-            instrLines |> List.map parseInstr
+            instrLines |> List.drop 1 |> List.map parseInstr
     in
     ( crates, instrs )
 
@@ -96,9 +95,11 @@ apply1 ( count, from, to ) crates =
         _ ->
             apply1 ( count - 1, from, to ) crates2
 
+
 topCrates : Crates -> String
 topCrates final =
     final |> List.map (List.head >> fromJust) |> String.fromList
+
 
 part1 : String -> String
 part1 input =
