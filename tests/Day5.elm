@@ -5,8 +5,8 @@ import Day5Input exposing (input)
 import Expect
 import Fuzz
 import List.Extra
-import String.Extra
 import Set
+import String.Extra
 import Test exposing (..)
 import Tuple
 
@@ -36,71 +36,93 @@ suite =
             ]
         ]
 
-type alias Crates = List(List Char)
-type alias Instr = (Int,Int,Int)
+
+type alias Crates =
+    List (List Char)
 
 
-parse : String -> (Crates, List Instr)
+type alias Instr =
+    ( Int, Int, Int )
+
+
+parse : String -> ( Crates, List Instr )
 parse input =
     let
-        lines = String.lines input
-        (cratesLines, instrLines) =
-            lines
-            |> List.Extra.splitWhen (\l -> l =="")
-            |> fromJust
-            |> \(a,b) -> (a, List.drop 1 b)
+        lines =
+            String.lines input
 
-        crates = cratesLines
-            |> List.map (\line -> line |> String.Extra.break 4 |> List.map (String.toList >> List.Extra.getAt 1 >> fromJust))
-            |> List.reverse
-            |> List.drop 1
-            |> List.Extra.transpose
-            |> List.map (List.Extra.dropWhileRight (\c -> c == ' '))
-            |> List.map List.reverse
+        ( cratesLines, instrLines ) =
+            lines
+                |> List.Extra.splitWhen (\l -> l == "")
+                |> fromJust
+                |> (\( a, b ) -> ( a, List.drop 1 b ))
+
+        crates =
+            cratesLines
+                |> List.map (\line -> line |> String.Extra.break 4 |> List.map (String.toList >> List.Extra.getAt 1 >> fromJust))
+                |> List.reverse
+                |> List.drop 1
+                |> List.Extra.transpose
+                |> List.map (List.Extra.dropWhileRight (\c -> c == ' '))
+                |> List.map List.reverse
+
+        parseInstr line =
+            case String.words line |> List.map String.toInt of
+                [ _, Just c, _, Just f, _, Just t ] ->
+                    ( c, f - 1, t - 1 )
+
+                _ ->
+                    Debug.todo line
 
         instrs =
-            instrLines
-            |> List.map String.words
-            |> List.map (\words -> (words |> List.Extra.getAt 1 |> Maybe.andThen String.toInt |> fromJust,
-                                    (words |> List.Extra.getAt 3 |> Maybe.andThen String.toInt |> fromJust) - 1,
-                                    (words |> List.Extra.getAt 5 |> Maybe.andThen String.toInt |> fromJust) - 1))
+            instrLines |> List.map parseInstr
+    in
+    ( crates, instrs )
 
-    in (crates, instrs)
 
-apply : Instr -> Crates -> Crates
-apply (count, from, to) crates =
+apply1 : Instr -> Crates -> Crates
+apply1 ( count, from, to ) crates =
     let
-        crates2 = crates
-            |> List.Extra.updateAt from (\l -> List.drop 1 l)
-            |> List.Extra.updateAt to
-                (\l -> (List.Extra.getAt from crates |> Maybe.andThen List.head |> fromJust) :: l)
+        crates2 =
+            crates
+                |> List.Extra.updateAt from (List.drop 1)
+                |> List.Extra.updateAt to
+                    (\l -> (List.Extra.getAt from crates |> Maybe.andThen List.head |> fromJust) :: l)
     in
     case count of
-        1 -> crates2
-        _ -> apply (count-1, from, to) crates2
+        1 ->
+            crates2
+
+        _ ->
+            apply1 ( count - 1, from, to ) crates2
+
+topCrates : Crates -> String
+topCrates final =
+    final |> List.map (List.head >> fromJust) |> String.fromList
 
 part1 : String -> String
 part1 input =
     let
-        (crates, instrs) = parse input
-        final = List.foldl apply crates instrs
+        ( crates, instrs ) =
+            parse input
     in
-    final |> List.map (\l -> List.head l |> fromJust) |> String.fromList
+    List.foldl apply1 crates instrs
+        |> topCrates
+
 
 apply2 : Instr -> Crates -> Crates
-apply2 (count, from, to) crates =
-    let
-        crates2 = crates
-            |> List.Extra.updateAt from (\l -> List.drop count l)
-            |> List.Extra.updateAt to
-                (\l -> (List.Extra.getAt from crates |> fromJust |> List.take count) ++ l)
-    in
-    crates2
+apply2 ( count, from, to ) crates =
+    crates
+        |> List.Extra.updateAt from (List.drop count)
+        |> List.Extra.updateAt to
+            (\l -> (List.Extra.getAt from crates |> Maybe.map (List.take count) |> fromJust) ++ l)
+
 
 part2 : String -> String
 part2 input =
     let
-        (crates, instrs) = parse input
-        final = List.foldl apply2 crates instrs
+        ( crates, instrs ) =
+            parse input
     in
-    final |> List.map (\l -> List.head l |> fromJust) |> String.fromList
+    List.foldl apply2 crates instrs
+        |> topCrates
