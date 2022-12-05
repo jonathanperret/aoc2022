@@ -37,15 +37,17 @@ suite =
         ]
 
 
-type alias Crates =
-    List (List Char)
+type alias Stack = List Char
+
+type alias Stacks =
+    List Stack
 
 
 type alias Instr =
     ( Int, Int, Int )
 
 
-parse : String -> ( Crates, List Instr )
+parse : String -> ( Stacks, List Instr )
 parse input =
     let
         lines =
@@ -62,8 +64,7 @@ parse input =
                 |> List.reverse
                 |> List.drop 1
                 |> List.Extra.transpose
-                |> List.map (List.Extra.dropWhileRight (\c -> c == ' '))
-                |> List.map List.reverse
+                |> List.map (List.reverse >> List.Extra.dropWhile (\c -> c == ' '))
 
         parseInstr line =
             case String.words line |> List.filterMap String.toInt of
@@ -79,24 +80,24 @@ parse input =
     ( crates, instrs )
 
 
-apply1 : Instr -> Crates -> Crates
-apply1 ( count, from, to ) crates =
+applyWith : (Stack -> Stack) -> Instr -> Stacks -> Stacks
+applyWith transformer ( count, from, to ) crates =
     let
-        crates2 =
-            crates
-                |> List.Extra.updateAt from (List.drop 1)
-                |> List.Extra.updateAt to
-                    (\l -> (List.Extra.getAt from crates |> Maybe.andThen List.head |> fromJust) :: l)
+        moving = crates
+            |> List.Extra.getAt from |> fromJust
+            |> List.take count
+            |> transformer
     in
-    case count of
-        1 ->
-            crates2
-
-        _ ->
-            apply1 ( count - 1, from, to ) crates2
+    crates
+        |> List.Extra.updateAt from (List.drop count)
+        |> List.Extra.updateAt to ((++) moving)
 
 
-topCrates : Crates -> String
+apply1 : Instr -> Stacks -> Stacks
+apply1 = applyWith List.reverse
+
+
+topCrates : Stacks -> String
 topCrates final =
     final |> List.map (List.head >> fromJust) |> String.fromList
 
@@ -111,12 +112,8 @@ part1 input =
         |> topCrates
 
 
-apply2 : Instr -> Crates -> Crates
-apply2 ( count, from, to ) crates =
-    crates
-        |> List.Extra.updateAt from (List.drop count)
-        |> List.Extra.updateAt to
-            (\l -> (List.Extra.getAt from crates |> Maybe.map (List.take count) |> fromJust) ++ l)
+apply2 : Instr -> Stacks -> Stacks
+apply2 = applyWith identity
 
 
 part2 : String -> String
