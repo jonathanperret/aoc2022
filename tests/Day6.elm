@@ -36,9 +36,9 @@ part2 = findMarker 14
 
 findMarker : Int -> String -> Int
 findMarker size input =
-    input
-    |> String.toList
-    |> List.Extra.groupsOfWithStep size 1
-    |> List.Extra.findIndex List.Extra.allDifferent
-    |> fromJust
-    |> (+) size
+    let
+        checkHead n l =
+            if (List.take size l |> Set.fromList |> Set.size) == size
+            then n
+            else checkHead (n + 1) (List.drop 1 l)
+    in input |> String.toList |> checkHead size
