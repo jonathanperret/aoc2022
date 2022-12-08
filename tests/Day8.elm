@@ -13,7 +13,7 @@ import Tuple
 import String as S
 import List as L
 import Debug as D
-
+import Array exposing (Array)
 
 example1 =
     """30373
@@ -96,48 +96,46 @@ part2 input =
         trees =
             input
             |> S.lines
-            |> L.map (S.split "" >> L.map (S.toInt >> fromJust))
+            |> L.map (S.split "" >> L.map (S.toInt >> fromJust) >> Array.fromList)
+            |> Array.fromList
 
-        scoresRightRow : List Int -> List Int
-        scoresRightRow row = case row of
-            (tree::rightTrees) ->
-                let
-                    seen l = case l of
-                        (h::tail) ->
-                            if h < tree then (1 + seen tail)
-                            else 1
-                        [] -> 0
-                in
-                seen rightTrees :: scoresRightRow rightTrees
-            [] -> []
+        rowCount = Array.length trees
+        colCount = Array.get 0 trees |> fromJust |> Array.length
 
-        scoresRight =
-            trees
-            |> L.concatMap scoresRightRow
+        getAt (rowIndex,colIndex) = trees |> Array.get rowIndex |> fromJust |> Array.get colIndex |> fromJust
 
-        scoresLeft =
-            trees
-            |> L.map (L.reverse >> scoresRightRow >> L.reverse)
-            |> L.concat
+        walk : (Int, Int) -> (Int, Int) -> Int
+        walk (dr, dc) (r0, c0) =
+            let
+                tree = getAt (r0, c0)
 
-        scoresBottom =
-            trees
-            |> LE.transpose
-            |> L.map (L.reverse >> scoresRightRow >> L.reverse)
-            |> LE.transpose
-            |> L.concat
+                loop n (r, c) =
+                    let
+                        z = if r < 0 || c < 0 || r >= rowCount || c >= colCount then
+                                n
+                            else if getAt (r,c) >= tree then
+                                n + 1
+                            else
+                                loop (n + 1) (r+dr, c+dc)
+                    in
+                    z
 
-        scoresTop =
-            trees
-            |> LE.transpose
-            |> L.map scoresRightRow
-            |> LE.transpose
-            |> L.concat
+            in
+            loop 0 (r0+dr, c0+dc)
 
-        scores =
-            List.map4 (\top left bottom right -> top * left * bottom * right)
-                scoresTop scoresLeft scoresBottom scoresRight
+
+        scoresA =
+            L.range 0 (rowCount - 1)
+            |> L.concatMap (\rowIndex ->
+                L.range 0 (colCount - 1)
+                |> L.map (\colIndex -> (rowIndex, colIndex)))
+            |> L.map (\(rowIndex, colIndex) ->
+                  walk (0,1) (rowIndex, colIndex)
+                * walk (1,0) (rowIndex, colIndex)
+                * walk (-1,0) (rowIndex, colIndex)
+                * walk (0,-1) (rowIndex, colIndex)
+            )
 
     in
-    scores |> L.maximum |> fromJust
+    scoresA |> L.maximum |> fromJust
 
