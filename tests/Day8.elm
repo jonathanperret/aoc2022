@@ -33,6 +33,14 @@ suite =
         , describe "part 2"
             [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 8
             , test "input" <| \_ -> input |> part2 |> Expect.equal 517440
+            --, fuzz Fuzz.int "bench" <| \_ -> input |> part2 |> Expect.equal 517440
+            , test "extract" <| \_ ->
+                Array.fromList [Array.fromList [1,2], Array.fromList [3,4]]
+                |> extract (0,0) (1,0)
+                |> Expect.equal [1,3]
+            , test "leftScores" <| \_ ->
+                leftScores [3,0,3,7,3]
+                |> Expect.equal [0,1,2,3,1]
             ]
         ]
 
@@ -90,6 +98,36 @@ part1 input =
     in
     result
 
+extract : (Int, Int) -> (Int, Int) -> Array (Array a) -> List a
+extract (r0, c0) (dr, dc) m =
+    let
+        loop (r, c) =
+            case Array.get r m |> Maybe.andThen (Array.get c) of
+                Nothing -> []
+                Just t -> t :: loop (r+dr, c+dc)
+    in
+    loop (r0, c0)
+
+leftScores : List Int -> List Int
+leftScores row =
+    let
+        scoreFor0 : Array Int
+        scoreFor0 = Array.repeat 10 0
+
+        iter: Array Int -> Int -> (Array Int, Int)
+        iter sf item =
+            let
+                score = sf |> Array.get item |> fromJust
+                sf2 =
+                    Array.indexedMap (\i s->
+                        if i<=item then 1 else s+1
+                    ) sf
+            in
+            (sf2, score)
+    in
+    LE.mapAccuml iter scoreFor0 row
+    |> Tuple.second
+
 part2: String -> Int
 part2 input =
     let
@@ -102,41 +140,37 @@ part2 input =
         rowCount = Array.length trees
         colCount = Array.get 0 trees |> fromJust |> Array.length
 
-        getAt (rowIndex,colIndex) =
-            trees
-            |> Array.get rowIndex
-            |> Maybe.andThen (Array.get colIndex)
+        rowLeftScores = L.range 0 (rowCount - 1)
+            |> L.map (\r -> (extract (r,0) (0,1) trees) |> leftScores)
 
-        walk : (Int, Int) -> (Int, Int) -> Int
-        walk (dr, dc) (r0, c0) =
-            let
-                tree = getAt (r0, c0) |> fromJust
+        rowRightScores = L.range 0 (rowCount - 1)
+            |> L.map (\r ->
+                extract (r,colCount-1) (0,-1) trees
+                |> leftScores
+                |> L.reverse
+                )
 
-                loop n (r, c) =
-                    case getAt (r,c) of
-                        Nothing -> n
-                        Just t ->
-                            if t >= tree then
-                                n + 1
-                            else
-                                loop (n + 1) (r+dr, c+dc)
+        rowTopScores = L.range 0 (colCount - 1)
+            |> L.map (\c ->
+                extract (0,c) (1,0) trees
+                |> leftScores
+                )
+            |> LE.transpose
 
-            in
-            loop 0 (r0+dr, c0+dc)
+        rowBottomScores = L.range 0 (colCount - 1)
+            |> L.map (\c ->
+                extract (rowCount-1,c) (-1,0) trees
+                |> leftScores
+                |> L.reverse
+                )
+            |> LE.transpose
 
-
-        scoresA =
-            L.range 0 (rowCount - 1)
-            |> L.concatMap (\rowIndex ->
-                L.range 0 (colCount - 1)
-                |> L.map (\colIndex -> (rowIndex, colIndex)))
-            |> L.map (\(rowIndex, colIndex) ->
-                  walk (0,1) (rowIndex, colIndex)
-                * walk (1,0) (rowIndex, colIndex)
-                * walk (-1,0) (rowIndex, colIndex)
-                * walk (0,-1) (rowIndex, colIndex)
-            )
+        scores =
+            [rowLeftScores,rowRightScores,rowTopScores,rowBottomScores]
+            |> LE.foldl1 (L.map2 <| L.map2 (*))
+            |> fromJust
+            |> L.concat
 
     in
-    scoresA |> L.maximum |> fromJust
+    scores |> L.maximum |> fromJust
 
