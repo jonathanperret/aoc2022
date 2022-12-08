@@ -102,23 +102,24 @@ part2 input =
         rowCount = Array.length trees
         colCount = Array.get 0 trees |> fromJust |> Array.length
 
-        getAt (rowIndex,colIndex) = trees |> Array.get rowIndex |> fromJust |> Array.get colIndex |> fromJust
+        getAt (rowIndex,colIndex) =
+            trees
+            |> Array.get rowIndex
+            |> Maybe.andThen (Array.get colIndex)
 
         walk : (Int, Int) -> (Int, Int) -> Int
         walk (dr, dc) (r0, c0) =
             let
-                tree = getAt (r0, c0)
+                tree = getAt (r0, c0) |> fromJust
 
                 loop n (r, c) =
-                    let
-                        z = if r < 0 || c < 0 || r >= rowCount || c >= colCount then
-                                n
-                            else if getAt (r,c) >= tree then
+                    case getAt (r,c) of
+                        Nothing -> n
+                        Just t ->
+                            if t >= tree then
                                 n + 1
                             else
                                 loop (n + 1) (r+dr, c+dc)
-                    in
-                    z
 
             in
             loop 0 (r0+dr, c0+dc)
