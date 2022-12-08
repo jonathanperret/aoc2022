@@ -13,6 +13,7 @@ import Tuple
 import String as S
 import List as L
 import Debug as D
+import Array exposing (Array)
 
 
 example1 =
@@ -32,7 +33,7 @@ suite =
             ]
         , describe "part 2"
             [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 8
-            , test "input" <| \_ -> input |> part2 |> Expect.equal 517440
+            , fuzzWith {runs=200,distribution=Test.noDistribution} Fuzz.int "input" <| \_ -> input |> part2 |> Expect.equal 517440
             ]
         ]
 
@@ -90,6 +91,26 @@ part1 input =
     in
     result
 
+leftScores : List Int -> List Int
+leftScores row =
+    let
+        scoreFor0 : Array Int
+        scoreFor0 = Array.repeat 10 0
+
+        iter: Array Int -> Int -> (Array Int, Int)
+        iter sf item =
+            let
+                score = sf |> Array.get item |> fromJust
+                sf2 =
+                    Array.indexedMap (\i s->
+                        if i<=item then 1 else s+1
+                    ) sf
+            in
+            (sf2, score)
+    in
+    LE.mapAccuml iter scoreFor0 row
+    |> Tuple.second
+
 part2: String -> Int
 part2 input =
     let
@@ -98,45 +119,30 @@ part2 input =
             |> S.lines
             |> L.map (S.split "" >> L.map (S.toInt >> fromJust))
 
-        scoresRightRow : List Int -> List Int
-        scoresRightRow row = case row of
-            (tree::rightTrees) ->
-                let
-                    seen l = case l of
-                        (h::tail) ->
-                            if h < tree then (1 + seen tail)
-                            else 1
-                        [] -> 0
-                in
-                seen rightTrees :: scoresRightRow rightTrees
-            [] -> []
-
         scoresRight =
             trees
-            |> L.concatMap scoresRightRow
+            |> L.map (L.reverse >> leftScores >> L.reverse)
+            |> L.concat
 
         scoresLeft =
             trees
-            |> L.map (L.reverse >> scoresRightRow >> L.reverse)
+            |> L.map leftScores
             |> L.concat
 
-        scoresBottom =
+        scoresTopBottom =
             trees
             |> LE.transpose
-            |> L.map (L.reverse >> scoresRightRow >> L.reverse)
-            |> LE.transpose
-            |> L.concat
-
-        scoresTop =
-            trees
-            |> LE.transpose
-            |> L.map scoresRightRow
+            |> L.map (\col ->
+                L.map2 (*)
+                    (leftScores col)
+                    (col |> L.reverse |> leftScores |> L.reverse)
+                )
             |> LE.transpose
             |> L.concat
 
         scores =
-            List.map4 (\top left bottom right -> top * left * bottom * right)
-                scoresTop scoresLeft scoresBottom scoresRight
+            List.map3 (\left topbottom right -> left * topbottom * right)
+                scoresLeft scoresTopBottom scoresRight
 
     in
     scores |> L.maximum |> fromJust
