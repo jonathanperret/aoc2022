@@ -8,7 +8,7 @@ import Expect
 import Fuzz
 import List as L
 import List.Extra as LE
-import Set
+import Set exposing (Set)
 import String as S
 import String.Extra
 import Test exposing (..)
@@ -43,74 +43,46 @@ suite =
         [ describe "part 1"
             [ test "move right" <|
                 \_ ->
-                    oneMove [ ( 0, 0 ), ( 0, 0 ) ] "R 4"
+                    oneMove (makeInitial 2) "R 4"
                         |> Expect.equal
-                            [ [ ( 0, 0 ), ( 0, 0 ) ]
-                            , [ ( 1, 0 ), ( 0, 0 ) ]
-                            , [ ( 2, 0 ), ( 1, 0 ) ]
-                            , [ ( 3, 0 ), ( 2, 0 ) ]
-                            , [ ( 4, 0 ), ( 3, 0 ) ]
-                            ]
+                            { rope = [ ( 4, 0 ), ( 3, 0 ) ]
+                            , visited = Set.fromList [ ( 0, 0 ), ( 1, 0 ), ( 2, 0 ), ( 3, 0 ) ]
+                            }
             , test "move up" <|
                 \_ ->
-                    oneMove [ ( 0, 0 ), ( 0, 0 ) ] "U 4"
+                    oneMove (makeInitial 2) "U 4"
                         |> Expect.equal
-                            [ [ ( 0, 0 ), ( 0, 0 ) ]
-                            , [ ( 0, 1 ), ( 0, 0 ) ]
-                            , [ ( 0, 2 ), ( 0, 1 ) ]
-                            , [ ( 0, 3 ), ( 0, 2 ) ]
-                            , [ ( 0, 4 ), ( 0, 3 ) ]
-                            ]
+                            { rope = [ ( 0, 4 ), ( 0, 3 ) ]
+                            , visited = Set.fromList [ ( 0, 0 ), ( 0, 1 ), ( 0, 2 ), ( 0, 3 ) ]
+                            }
             , test "allMoves" <|
                 \_ ->
                     example1
                         |> allMoves 2
                         |> Expect.equal
-                            [ [ ( 0, 0 ), ( 0, 0 ) ]
-                            , [ ( 1, 0 ), ( 0, 0 ) ]
-                            , [ ( 2, 0 ), ( 1, 0 ) ]
-                            , [ ( 3, 0 ), ( 2, 0 ) ]
-                            , [ ( 4, 0 ), ( 3, 0 ) ]
-                            , [ ( 4, 1 ), ( 3, 0 ) ]
-                            , [ ( 4, 2 ), ( 4, 1 ) ]
-                            , [ ( 4, 3 ), ( 4, 2 ) ]
-                            , [ ( 4, 4 ), ( 4, 3 ) ]
-                            , [ ( 3, 4 ), ( 4, 3 ) ]
-                            , [ ( 2, 4 ), ( 3, 4 ) ]
-                            , [ ( 1, 4 ), ( 2, 4 ) ]
-                            , [ ( 1, 3 ), ( 2, 4 ) ]
-                            , [ ( 2, 3 ), ( 2, 4 ) ]
-                            , [ ( 3, 3 ), ( 2, 4 ) ]
-                            , [ ( 4, 3 ), ( 3, 3 ) ]
-                            , [ ( 5, 3 ), ( 4, 3 ) ]
-                            , [ ( 5, 2 ), ( 4, 3 ) ]
-                            , [ ( 4, 2 ), ( 4, 3 ) ]
-                            , [ ( 3, 2 ), ( 4, 3 ) ]
-                            , [ ( 2, 2 ), ( 3, 2 ) ]
-                            , [ ( 1, 2 ), ( 2, 2 ) ]
-                            , [ ( 0, 2 ), ( 1, 2 ) ]
-                            , [ ( 1, 2 ), ( 1, 2 ) ]
-                            , [ ( 2, 2 ), ( 1, 2 ) ]
-                            ]
+                            { rope = [ ( 2, 2 ), ( 1, 2 ) ]
+                            , visited = Set.fromList [ ( 0, 0 ), ( 1, 0 ), ( 1, 2 ), ( 2, 0 ), ( 2, 2 ), ( 2, 4 ), ( 3, 0 ), ( 3, 2 ), ( 3, 3 ), ( 3, 4 ), ( 4, 1 ), ( 4, 2 ), ( 4, 3 ) ]
+                            }
             , test "example" <| \_ -> example1 |> part1 |> Expect.equal 13
             , test "input" <| \_ -> input |> part1 |> Expect.equal 6212
             ]
         , describe "part 2"
             [ test "move right" <|
                 \_ ->
-                    oneMove [ ( 0, 0 ), ( 0, 0 ), ( 0, 0 ) ] "R 4"
+                    oneMove (makeInitial 3) "R 4"
                         |> Expect.equal
-                            [ [ ( 0, 0 ), ( 0, 0 ), ( 0, 0 ) ]
-                            , [ ( 1, 0 ), ( 0, 0 ), ( 0, 0 ) ]
-                            , [ ( 2, 0 ), ( 1, 0 ), ( 0, 0 ) ]
-                            , [ ( 3, 0 ), ( 2, 0 ), ( 1, 0 ) ]
-                            , [ ( 4, 0 ), ( 3, 0 ), ( 2, 0 ) ]
-                            ]
+                            { rope = [ ( 4, 0 ), ( 3, 0 ), ( 2, 0 ) ]
+                            , visited = Set.fromList [ ( 0, 0 ), ( 1, 0 ), ( 2, 0 ) ]
+                            }
             , test "example1" <| \_ -> example1 |> part2 |> Expect.equal 1
             , test "example2" <| \_ -> example2 |> part2 |> Expect.equal 36
             , test "input" <| \_ -> input |> part2 |> Expect.equal 2522
             ]
         ]
+
+
+type alias State =
+    { rope : Rope, visited : Set ( Int, Int ) }
 
 
 type alias Rope =
@@ -180,39 +152,52 @@ catchup ( tx, ty ) ( hx, hy ) =
     )
 
 
-step : Step -> Rope -> Rope
+step : Step -> State -> State
 step ( dx, dy ) state =
-    case state of
+    case state.rope of
         ( hx, hy ) :: tail ->
-            (( hx + dx, hy + dy ) :: tail)
-                |> LE.scanl1 catchup
+            let
+                newrope =
+                    (( hx + dx, hy + dy ) :: tail)
+                        |> LE.scanl1 catchup
+
+                newtail =
+                    LE.last newrope |> fromJust
+            in
+            { state | rope = newrope, visited = state.visited |> Set.insert newtail }
 
         _ ->
             Debug.todo "bad rope"
 
 
-oneMove : Rope -> String -> List Rope
+oneMove : State -> String -> State
 oneMove state move =
     expandMove move
-        |> LE.scanl step state
+        |> L.foldl step state
 
 
-allMoves : Int -> String -> List Rope
+makeInitial : Int -> State
+makeInitial ropeLength =
+    { rope = L.repeat ropeLength ( 0, 0 )
+    , visited = Set.empty
+    }
+
+
+allMoves : Int -> String -> State
 allMoves ropeLength input =
     let
         steps =
             expandMoves input
 
         initial =
-            L.repeat ropeLength ( 0, 0 )
+            makeInitial ropeLength
     in
-    LE.scanl step initial steps
+    L.foldl step initial steps
 
 
 tailPositionCount ropeLength input =
     allMoves ropeLength input
-        |> L.map (LE.last >> fromJust)
-        |> Set.fromList
+        |> .visited
         |> Set.size
 
 
