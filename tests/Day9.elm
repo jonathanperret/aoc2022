@@ -43,50 +43,54 @@ suite =
         [ describe "part 1"
             [ test "move right" <|
                 \_ ->
-                    applyMove { head = ( 0, 0 ), tails = [ ( 0, 0 ) ] } "R 4"
-                        |> Expect.equal [ { head = ( 0, 0 ), tails = [ ( 0, 0 ) ] }, { head = ( 1, 0 ), tails = [ ( 0, 0 ) ] }, { head = ( 2, 0 ), tails = [ ( 1, 0 ) ] }, { head = ( 3, 0 ), tails = [ ( 2, 0 ) ] }, { head = ( 4, 0 ), tails = [ ( 3, 0 ) ] } ]
+                    oneMove { head = ( 0, 0 ), tail = [ ( 0, 0 ) ] } "R 4"
+                        |> Expect.equal
+                            [ { head = ( 0, 0 ), tail = [ ( 0, 0 ) ] }
+                            , { head = ( 1, 0 ), tail = [ ( 0, 0 ) ] }
+                            , { head = ( 2, 0 ), tail = [ ( 1, 0 ) ] }
+                            , { head = ( 3, 0 ), tail = [ ( 2, 0 ) ] }
+                            , { head = ( 4, 0 ), tail = [ ( 3, 0 ) ] }
+                            ]
             , test "move up" <|
                 \_ ->
-                    applyMove { head = ( 4, 0 ), tails = [ ( 3, 0 ) ] } "U 4"
-                        |> Expect.equal [ { head = ( 4, 0 ), tails = [ ( 3, 0 ) ] }, { head = ( 4, 1 ), tails = [ ( 3, 0 ) ] }, { head = ( 4, 2 ), tails = [ ( 4, 1 ) ] }, { head = ( 4, 3 ), tails = [ ( 4, 2 ) ] }, { head = ( 4, 4 ), tails = [ ( 4, 3 ) ] } ]
+                    oneMove { head = ( 4, 0 ), tail = [ ( 3, 0 ) ] } "U 4"
+                        |> Expect.equal
+                            [ { head = ( 4, 0 ), tail = [ ( 3, 0 ) ] }
+                            , { head = ( 4, 1 ), tail = [ ( 3, 0 ) ] }
+                            , { head = ( 4, 2 ), tail = [ ( 4, 1 ) ] }
+                            , { head = ( 4, 3 ), tail = [ ( 4, 2 ) ] }
+                            , { head = ( 4, 4 ), tail = [ ( 4, 3 ) ] }
+                            ]
             , test "allMoves" <|
                 \_ ->
                     example1
                         |> allMoves 1
                         |> Expect.equal
-                            [ { head = ( 0, 0 ), tails = [ ( 0, 0 ) ] }
-                            , { head = ( 0, 0 ), tails = [ ( 0, 0 ) ] }
-                            , { head = ( 1, 0 ), tails = [ ( 0, 0 ) ] }
-                            , { head = ( 2, 0 ), tails = [ ( 1, 0 ) ] }
-                            , { head = ( 3, 0 ), tails = [ ( 2, 0 ) ] }
-                            , { head = ( 4, 0 ), tails = [ ( 3, 0 ) ] }
-                            , { head = ( 4, 0 ), tails = [ ( 3, 0 ) ] }
-                            , { head = ( 4, 1 ), tails = [ ( 3, 0 ) ] }
-                            , { head = ( 4, 2 ), tails = [ ( 4, 1 ) ] }
-                            , { head = ( 4, 3 ), tails = [ ( 4, 2 ) ] }
-                            , { head = ( 4, 4 ), tails = [ ( 4, 3 ) ] }
-                            , { head = ( 4, 4 ), tails = [ ( 4, 3 ) ] }
-                            , { head = ( 3, 4 ), tails = [ ( 4, 3 ) ] }
-                            , { head = ( 2, 4 ), tails = [ ( 3, 4 ) ] }
-                            , { head = ( 1, 4 ), tails = [ ( 2, 4 ) ] }
-                            , { head = ( 1, 4 ), tails = [ ( 2, 4 ) ] }
-                            , { head = ( 1, 3 ), tails = [ ( 2, 4 ) ] }
-                            , { head = ( 1, 3 ), tails = [ ( 2, 4 ) ] }
-                            , { head = ( 2, 3 ), tails = [ ( 2, 4 ) ] }
-                            , { head = ( 3, 3 ), tails = [ ( 2, 4 ) ] }
-                            , { head = ( 4, 3 ), tails = [ ( 3, 3 ) ] }
-                            , { head = ( 5, 3 ), tails = [ ( 4, 3 ) ] }
-                            , { head = ( 5, 3 ), tails = [ ( 4, 3 ) ] }
-                            , { head = ( 5, 2 ), tails = [ ( 4, 3 ) ] }
-                            , { head = ( 5, 2 ), tails = [ ( 4, 3 ) ] }
-                            , { head = ( 4, 2 ), tails = [ ( 4, 3 ) ] }
-                            , { head = ( 3, 2 ), tails = [ ( 4, 3 ) ] }
-                            , { head = ( 2, 2 ), tails = [ ( 3, 2 ) ] }
-                            , { head = ( 1, 2 ), tails = [ ( 2, 2 ) ] }
-                            , { head = ( 0, 2 ), tails = [ ( 1, 2 ) ] }
-                            , { head = ( 0, 2 ), tails = [ ( 1, 2 ) ] }
-                            , { head = ( 1, 2 ), tails = [ ( 1, 2 ) ] }
-                            , { head = ( 2, 2 ), tails = [ ( 1, 2 ) ] }
+                            [ { head = ( 0, 0 ), tail = [ ( 0, 0 ) ] }
+                            , { head = ( 1, 0 ), tail = [ ( 0, 0 ) ] }
+                            , { head = ( 2, 0 ), tail = [ ( 1, 0 ) ] }
+                            , { head = ( 3, 0 ), tail = [ ( 2, 0 ) ] }
+                            , { head = ( 4, 0 ), tail = [ ( 3, 0 ) ] }
+                            , { head = ( 4, 1 ), tail = [ ( 3, 0 ) ] }
+                            , { head = ( 4, 2 ), tail = [ ( 4, 1 ) ] }
+                            , { head = ( 4, 3 ), tail = [ ( 4, 2 ) ] }
+                            , { head = ( 4, 4 ), tail = [ ( 4, 3 ) ] }
+                            , { head = ( 3, 4 ), tail = [ ( 4, 3 ) ] }
+                            , { head = ( 2, 4 ), tail = [ ( 3, 4 ) ] }
+                            , { head = ( 1, 4 ), tail = [ ( 2, 4 ) ] }
+                            , { head = ( 1, 3 ), tail = [ ( 2, 4 ) ] }
+                            , { head = ( 2, 3 ), tail = [ ( 2, 4 ) ] }
+                            , { head = ( 3, 3 ), tail = [ ( 2, 4 ) ] }
+                            , { head = ( 4, 3 ), tail = [ ( 3, 3 ) ] }
+                            , { head = ( 5, 3 ), tail = [ ( 4, 3 ) ] }
+                            , { head = ( 5, 2 ), tail = [ ( 4, 3 ) ] }
+                            , { head = ( 4, 2 ), tail = [ ( 4, 3 ) ] }
+                            , { head = ( 3, 2 ), tail = [ ( 4, 3 ) ] }
+                            , { head = ( 2, 2 ), tail = [ ( 3, 2 ) ] }
+                            , { head = ( 1, 2 ), tail = [ ( 2, 2 ) ] }
+                            , { head = ( 0, 2 ), tail = [ ( 1, 2 ) ] }
+                            , { head = ( 1, 2 ), tail = [ ( 1, 2 ) ] }
+                            , { head = ( 2, 2 ), tail = [ ( 1, 2 ) ] }
                             ]
             , test "example" <| \_ -> example1 |> part1 |> Expect.equal 13
             , test "input" <| \_ -> input |> part1 |> Expect.equal 6212
@@ -94,57 +98,39 @@ suite =
         , describe "part 2"
             [ test "move right" <|
                 \_ ->
-                    applyMove { head = ( 0, 0 ), tails = [ ( 0, 0 ), ( 0, 0 ) ] } "R 4"
+                    oneMove { head = ( 0, 0 ), tail = [ ( 0, 0 ), ( 0, 0 ) ] } "R 4"
                         |> Expect.equal
-                            [ { head = ( 0, 0 ), tails = [ ( 0, 0 ), ( 0, 0 ) ] }
-                            , { head = ( 1, 0 ), tails = [ ( 0, 0 ), ( 0, 0 ) ] }
-                            , { head = ( 2, 0 ), tails = [ ( 1, 0 ), ( 0, 0 ) ] }
-                            , { head = ( 3, 0 ), tails = [ ( 2, 0 ), ( 1, 0 ) ] }
-                            , { head = ( 4, 0 ), tails = [ ( 3, 0 ), ( 2, 0 ) ] }
+                            [ { head = ( 0, 0 ), tail = [ ( 0, 0 ), ( 0, 0 ) ] }
+                            , { head = ( 1, 0 ), tail = [ ( 0, 0 ), ( 0, 0 ) ] }
+                            , { head = ( 2, 0 ), tail = [ ( 1, 0 ), ( 0, 0 ) ] }
+                            , { head = ( 3, 0 ), tail = [ ( 2, 0 ), ( 1, 0 ) ] }
+                            , { head = ( 4, 0 ), tail = [ ( 3, 0 ), ( 2, 0 ) ] }
                             ]
-            , test "example" <| \_ -> example1 |> part2 |> Expect.equal 1
+            , test "example1" <| \_ -> example1 |> part2 |> Expect.equal 1
             , test "example2" <| \_ -> example2 |> part2 |> Expect.equal 36
             , test "input" <| \_ -> input |> part2 |> Expect.equal 2522
             ]
         ]
 
 
-allMoves length input =
-    let
-        moves =
-            String.lines input
-
-        initial =
-            [ { head = ( 0, 0 ), tails = L.repeat length ( 0, 0 ) } ]
-    in
-    LE.scanl (\m ss -> applyMove (LE.last ss |> fromJust) m) initial moves
-        |> L.concat
+type alias State =
+    { head : ( Int, Int ), tail : List ( Int, Int ) }
 
 
-catchup ( hx, hy ) ( tx, ty ) =
-    ( if hx > tx + 1 || (hx > tx && (hy > ty + 1 || hy < ty - 1)) then
-        tx + 1
-
-      else if hx < tx - 1 || (hx < tx && (hy > ty + 1 || hy < ty - 1)) then
-        tx - 1
-
-      else
-        tx
-    , if hy > ty + 1 || (hy > ty && (hx > tx + 1 || hx < tx - 1)) then
-        ty + 1
-
-      else if hy < ty - 1 || (hy < ty && (hx > tx + 1 || hx < tx - 1)) then
-        ty - 1
-
-      else
-        ty
-    )
+type alias Step =
+    ( Int, Int )
 
 
-applyMove state move =
+expandMoves : String -> List Step
+expandMoves =
+    String.lines >> L.concatMap expandMove
+
+
+expandMove : String -> List Step
+expandMove line =
     let
         ( dir, rstr ) =
-            case move |> String.words of
+            case line |> String.words of
                 [ a, b ] ->
                     ( a, b )
 
@@ -170,52 +156,80 @@ applyMove state move =
 
                 _ ->
                     Debug.todo "bad dir"
-
-        doMove s =
-            let
-                ( hx, hy ) =
-                    s.head
-
-                ( hx2, hy2 ) =
-                    ( hx + dx, hy + dy )
-
-                newtails =
-                    s.tails
-                        |> LE.mapAccuml
-                            (\prev t ->
-                                let
-                                    n =
-                                        catchup prev t
-                                in
-                                ( n, n )
-                            )
-                            ( hx2, hy2 )
-                        |> Tuple.second
-
-                news =
-                    { head = ( hx2, hy2 ), tails = newtails }
-            in
-            news
     in
-    L.range 1 repeats
-        |> LE.scanl (\_ s -> doMove s) state
+    L.repeat repeats ( dx, dy )
 
 
-moveRope length input =
+catchup ( tx, ty ) ( hx, hy ) =
+    ( if hx > tx + 1 || (hx > tx && (hy > ty + 1 || hy < ty - 1)) then
+        tx + 1
+
+      else if hx < tx - 1 || (hx < tx && (hy > ty + 1 || hy < ty - 1)) then
+        tx - 1
+
+      else
+        tx
+    , if hy > ty + 1 || (hy > ty && (hx > tx + 1 || hx < tx - 1)) then
+        ty + 1
+
+      else if hy < ty - 1 || (hy < ty && (hx > tx + 1 || hx < tx - 1)) then
+        ty - 1
+
+      else
+        ty
+    )
+
+
+step : Step -> State -> State
+step ( dx, dy ) state =
     let
-        states =
-            allMoves length input
+        ( hx, hy ) =
+            state.head
+
+        ( hx2, hy2 ) =
+            ( hx + dx, hy + dy )
+
+        newtail =
+            state.tail
+                |> LE.scanl catchup ( hx2, hy2 )
+                |> List.drop 1
     in
-    states
-        |> L.map (\s -> s.tails |> LE.last |> fromJust)
-        |> LE.unique
-        |> L.length
+    { head = ( hx2, hy2 ), tail = newtail }
 
 
-part1 input =
-    moveRope 1 input
+oneMove : State -> String -> List State
+oneMove state move =
+    let
+        steps =
+            expandMove move
+    in
+    LE.scanl step state steps
+
+
+allMoves : Int -> String -> List State
+allMoves tailLength input =
+    let
+        steps =
+            expandMoves input
+
+        initial =
+            { head = ( 0, 0 ), tail = L.repeat tailLength ( 0, 0 ) }
+    in
+    LE.scanl (\m s -> step m s) initial steps
+
+
+tailPositionCount tailLength input =
+    allMoves tailLength input
+        |> L.map (\s -> s.tail |> LE.last |> fromJust)
+        |> Set.fromList
+        |> Set.size
+
+
+part1 : String -> Int
+part1 =
+    tailPositionCount 1
 
 
 part2 : String -> Int
 part2 =
-    moveRope 9
+    tailPositionCount 9
