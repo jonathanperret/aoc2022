@@ -43,54 +43,54 @@ suite =
         [ describe "part 1"
             [ test "move right" <|
                 \_ ->
-                    oneMove { head = ( 0, 0 ), tail = [ ( 0, 0 ) ] } "R 4"
+                    oneMove [ ( 0, 0 ), ( 0, 0 ) ] "R 4"
                         |> Expect.equal
-                            [ { head = ( 0, 0 ), tail = [ ( 0, 0 ) ] }
-                            , { head = ( 1, 0 ), tail = [ ( 0, 0 ) ] }
-                            , { head = ( 2, 0 ), tail = [ ( 1, 0 ) ] }
-                            , { head = ( 3, 0 ), tail = [ ( 2, 0 ) ] }
-                            , { head = ( 4, 0 ), tail = [ ( 3, 0 ) ] }
+                            [ [ ( 0, 0 ), ( 0, 0 ) ]
+                            , [ ( 1, 0 ), ( 0, 0 ) ]
+                            , [ ( 2, 0 ), ( 1, 0 ) ]
+                            , [ ( 3, 0 ), ( 2, 0 ) ]
+                            , [ ( 4, 0 ), ( 3, 0 ) ]
                             ]
             , test "move up" <|
                 \_ ->
-                    oneMove { head = ( 4, 0 ), tail = [ ( 3, 0 ) ] } "U 4"
+                    oneMove [ ( 0, 0 ), ( 0, 0 ) ] "U 4"
                         |> Expect.equal
-                            [ { head = ( 4, 0 ), tail = [ ( 3, 0 ) ] }
-                            , { head = ( 4, 1 ), tail = [ ( 3, 0 ) ] }
-                            , { head = ( 4, 2 ), tail = [ ( 4, 1 ) ] }
-                            , { head = ( 4, 3 ), tail = [ ( 4, 2 ) ] }
-                            , { head = ( 4, 4 ), tail = [ ( 4, 3 ) ] }
+                            [ [ ( 0, 0 ), ( 0, 0 ) ]
+                            , [ ( 0, 1 ), ( 0, 0 ) ]
+                            , [ ( 0, 2 ), ( 0, 1 ) ]
+                            , [ ( 0, 3 ), ( 0, 2 ) ]
+                            , [ ( 0, 4 ), ( 0, 3 ) ]
                             ]
             , test "allMoves" <|
                 \_ ->
                     example1
-                        |> allMoves 1
+                        |> allMoves 2
                         |> Expect.equal
-                            [ { head = ( 0, 0 ), tail = [ ( 0, 0 ) ] }
-                            , { head = ( 1, 0 ), tail = [ ( 0, 0 ) ] }
-                            , { head = ( 2, 0 ), tail = [ ( 1, 0 ) ] }
-                            , { head = ( 3, 0 ), tail = [ ( 2, 0 ) ] }
-                            , { head = ( 4, 0 ), tail = [ ( 3, 0 ) ] }
-                            , { head = ( 4, 1 ), tail = [ ( 3, 0 ) ] }
-                            , { head = ( 4, 2 ), tail = [ ( 4, 1 ) ] }
-                            , { head = ( 4, 3 ), tail = [ ( 4, 2 ) ] }
-                            , { head = ( 4, 4 ), tail = [ ( 4, 3 ) ] }
-                            , { head = ( 3, 4 ), tail = [ ( 4, 3 ) ] }
-                            , { head = ( 2, 4 ), tail = [ ( 3, 4 ) ] }
-                            , { head = ( 1, 4 ), tail = [ ( 2, 4 ) ] }
-                            , { head = ( 1, 3 ), tail = [ ( 2, 4 ) ] }
-                            , { head = ( 2, 3 ), tail = [ ( 2, 4 ) ] }
-                            , { head = ( 3, 3 ), tail = [ ( 2, 4 ) ] }
-                            , { head = ( 4, 3 ), tail = [ ( 3, 3 ) ] }
-                            , { head = ( 5, 3 ), tail = [ ( 4, 3 ) ] }
-                            , { head = ( 5, 2 ), tail = [ ( 4, 3 ) ] }
-                            , { head = ( 4, 2 ), tail = [ ( 4, 3 ) ] }
-                            , { head = ( 3, 2 ), tail = [ ( 4, 3 ) ] }
-                            , { head = ( 2, 2 ), tail = [ ( 3, 2 ) ] }
-                            , { head = ( 1, 2 ), tail = [ ( 2, 2 ) ] }
-                            , { head = ( 0, 2 ), tail = [ ( 1, 2 ) ] }
-                            , { head = ( 1, 2 ), tail = [ ( 1, 2 ) ] }
-                            , { head = ( 2, 2 ), tail = [ ( 1, 2 ) ] }
+                            [ [ ( 0, 0 ), ( 0, 0 ) ]
+                            , [ ( 1, 0 ), ( 0, 0 ) ]
+                            , [ ( 2, 0 ), ( 1, 0 ) ]
+                            , [ ( 3, 0 ), ( 2, 0 ) ]
+                            , [ ( 4, 0 ), ( 3, 0 ) ]
+                            , [ ( 4, 1 ), ( 3, 0 ) ]
+                            , [ ( 4, 2 ), ( 4, 1 ) ]
+                            , [ ( 4, 3 ), ( 4, 2 ) ]
+                            , [ ( 4, 4 ), ( 4, 3 ) ]
+                            , [ ( 3, 4 ), ( 4, 3 ) ]
+                            , [ ( 2, 4 ), ( 3, 4 ) ]
+                            , [ ( 1, 4 ), ( 2, 4 ) ]
+                            , [ ( 1, 3 ), ( 2, 4 ) ]
+                            , [ ( 2, 3 ), ( 2, 4 ) ]
+                            , [ ( 3, 3 ), ( 2, 4 ) ]
+                            , [ ( 4, 3 ), ( 3, 3 ) ]
+                            , [ ( 5, 3 ), ( 4, 3 ) ]
+                            , [ ( 5, 2 ), ( 4, 3 ) ]
+                            , [ ( 4, 2 ), ( 4, 3 ) ]
+                            , [ ( 3, 2 ), ( 4, 3 ) ]
+                            , [ ( 2, 2 ), ( 3, 2 ) ]
+                            , [ ( 1, 2 ), ( 2, 2 ) ]
+                            , [ ( 0, 2 ), ( 1, 2 ) ]
+                            , [ ( 1, 2 ), ( 1, 2 ) ]
+                            , [ ( 2, 2 ), ( 1, 2 ) ]
                             ]
             , test "example" <| \_ -> example1 |> part1 |> Expect.equal 13
             , test "input" <| \_ -> input |> part1 |> Expect.equal 6212
@@ -98,13 +98,13 @@ suite =
         , describe "part 2"
             [ test "move right" <|
                 \_ ->
-                    oneMove { head = ( 0, 0 ), tail = [ ( 0, 0 ), ( 0, 0 ) ] } "R 4"
+                    oneMove [ ( 0, 0 ), ( 0, 0 ), ( 0, 0 ) ] "R 4"
                         |> Expect.equal
-                            [ { head = ( 0, 0 ), tail = [ ( 0, 0 ), ( 0, 0 ) ] }
-                            , { head = ( 1, 0 ), tail = [ ( 0, 0 ), ( 0, 0 ) ] }
-                            , { head = ( 2, 0 ), tail = [ ( 1, 0 ), ( 0, 0 ) ] }
-                            , { head = ( 3, 0 ), tail = [ ( 2, 0 ), ( 1, 0 ) ] }
-                            , { head = ( 4, 0 ), tail = [ ( 3, 0 ), ( 2, 0 ) ] }
+                            [ [ ( 0, 0 ), ( 0, 0 ), ( 0, 0 ) ]
+                            , [ ( 1, 0 ), ( 0, 0 ), ( 0, 0 ) ]
+                            , [ ( 2, 0 ), ( 1, 0 ), ( 0, 0 ) ]
+                            , [ ( 3, 0 ), ( 2, 0 ), ( 1, 0 ) ]
+                            , [ ( 4, 0 ), ( 3, 0 ), ( 2, 0 ) ]
                             ]
             , test "example1" <| \_ -> example1 |> part2 |> Expect.equal 1
             , test "example2" <| \_ -> example2 |> part2 |> Expect.equal 36
@@ -113,8 +113,8 @@ suite =
         ]
 
 
-type alias State =
-    { head : ( Int, Int ), tail : List ( Int, Int ) }
+type alias Rope =
+    List ( Int, Int )
 
 
 type alias Step =
@@ -180,56 +180,47 @@ catchup ( tx, ty ) ( hx, hy ) =
     )
 
 
-step : Step -> State -> State
+step : Step -> Rope -> Rope
 step ( dx, dy ) state =
-    let
-        ( hx, hy ) =
-            state.head
+    case state of
+        ( hx, hy ) :: tail ->
+            (( hx + dx, hy + dy ) :: tail)
+                |> LE.scanl1 catchup
 
-        ( hx2, hy2 ) =
-            ( hx + dx, hy + dy )
-
-        newtail =
-            state.tail
-                |> LE.scanl catchup ( hx2, hy2 )
-                |> List.drop 1
-    in
-    { head = ( hx2, hy2 ), tail = newtail }
+        _ ->
+            Debug.todo "bad rope"
 
 
-oneMove : State -> String -> List State
+oneMove : Rope -> String -> List Rope
 oneMove state move =
-    let
-        steps =
-            expandMove move
-    in
-    LE.scanl step state steps
+    expandMove move
+        |> LE.scanl step state
 
 
-allMoves : Int -> String -> List State
-allMoves tailLength input =
+allMoves : Int -> String -> List Rope
+allMoves ropeLength input =
     let
         steps =
             expandMoves input
 
         initial =
-            { head = ( 0, 0 ), tail = L.repeat tailLength ( 0, 0 ) }
+            L.repeat ropeLength ( 0, 0 )
     in
-    LE.scanl (\m s -> step m s) initial steps
+    LE.scanl step initial steps
 
 
-tailPositionCount tailLength input =
-    allMoves tailLength input
-        |> L.map (\s -> s.tail |> LE.last |> fromJust)
+tailPositionCount ropeLength input =
+    allMoves ropeLength input
+        |> L.map (LE.last >> fromJust)
         |> Set.fromList
         |> Set.size
 
 
 part1 : String -> Int
 part1 =
-    tailPositionCount 1
+    tailPositionCount 2
 
 
 part2 : String -> Int
 part2 =
-    tailPositionCount 9
+    tailPositionCount 10
