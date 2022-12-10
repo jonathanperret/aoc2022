@@ -1,7 +1,7 @@
-module Day15 exposing (..)
+module Day25Tests exposing (..)
 
 import AocUtil exposing (..)
-import Day15Input exposing (input)
+import Day25Input exposing (input)
 import Expect
 import Fuzz
 import List.Extra
@@ -24,7 +24,7 @@ example1 =
 
 suite : Test
 suite =
-    describe "day 15"
+    describe "day 25"
         [ describe "part 1"
             [ test "example" <| \_ -> example1 |> part1 |> Expect.equal 0
             , test "input" <| \_ -> input |> part1 |> Expect.equal 0

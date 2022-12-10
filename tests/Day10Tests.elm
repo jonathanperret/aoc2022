@@ -1,4 +1,4 @@
-module Day10 exposing (..)
+module Day10Tests exposing (..)
 
 import AocUtil exposing (..)
 import Array exposing (Array)

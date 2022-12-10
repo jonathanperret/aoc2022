@@ -1,4 +1,4 @@
-module Day4 exposing (..)
+module Day4Tests exposing (..)
 
 import AocUtil exposing (..)
 import Day4Input exposing (input)

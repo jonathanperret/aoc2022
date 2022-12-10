@@ -1,4 +1,4 @@
-module Day1 exposing (..)
+module Day1Tests exposing (..)
 
 import Day1Input exposing (input)
 import Expect

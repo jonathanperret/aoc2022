@@ -1,4 +1,4 @@
-module Day3 exposing (..)
+module Day3Tests exposing (..)
 
 import AocUtil exposing (..)
 import Day3Input exposing (input)
