@@ -60,9 +60,9 @@ suite =
                         |> parseMonkey
                         |> Expect.equal
                             { index = 0
-                            , starting = [ 79, 98 ]
+                            , starting = L.map toNum [ 79, 98 ]
                             , op = Mul 19
-                            , div = 23
+                            , divIndex = 8
                             , ifTrue = 2
                             , ifFalse = 3
                             , activity = 0
@@ -71,35 +71,93 @@ suite =
                 \_ ->
                     evalMonkey
                         { index = 0
-                        , starting = [ 79, 98, 23 * 7 * 3 ]
+                        , starting = L.map toNum [ 79, 98, 23 ]
                         , op = Mul 19
-                        , div = 23
+                        , divIndex = 8
                         , ifTrue = 2
                         , ifFalse = 3
                         , activity = 0
                         }
                         |> Expect.equal
-                            ( ( 2, [ 23 * 7 * 19 ] ), ( 3, [ 500, 620 ] ) )
+                            ((2,[[1,2,2,3,8,8,12,0,0]]),(3,[[1,1,1,3,5,6,5,0,6],[0,2,2,0,3,3,9,0,22]]))
+            , test "toNum" <| \_ -> toNum 123 |> Expect.equal [ 1, 0, 3, 4, 2, 6, 4, 9, 8 ]
+            , test "numAddInt" <|
+                \_ ->
+                    numAddInt (toNum 123) 456
+                        |> Expect.equal [ 1, 0, 4, 5, 7, 7, 1, 9, 4 ]
+            , test "numMulInt" <|
+                \_ ->
+                    numMulInt (toNum 123) 456
+                        |> Expect.equal [ 0, 0, 3, 4, 10, 6, 5, 0, 14 ]
             , test "round" <|
                 \_ ->
                     example1
                         |> parseMonkeys
                         |> round
                         |> Expect.equal
-                            [ { activity = 2, div = 23, ifFalse = 3, ifTrue = 2, index = 0, op = Mul 19, starting = [ 20, 23, 27, 26 ] }
-                            , { activity = 4, div = 19, ifFalse = 0, ifTrue = 2, index = 1, op = Add 6, starting = [2080, 25, 167, 207, 401, 1046] }
-                            , { activity = 3, div = 13, ifFalse = 3, ifTrue = 1, index = 2, op = Square, starting = [] }
-                            , { activity = 5, div = 17, ifFalse = 1, ifTrue = 0, index = 3, op = Add 3, starting = [] }
+                            [ { activity = 2
+                              , divIndex = 8
+                              , ifFalse = 3
+                              , ifTrue = 2
+                              , index = 0
+                              , op = Mul 19
+                              , starting =
+                                    [ [ 0 , 0 , 0 , 4 , 5 , 8 , 9 , 3 , 14 ]
+                                    , [ 1 , 2 , 1 , 1 , 5 , 6 , 3 , 14 , 2 ]
+                                    , [ 1 , 0 , 1 , 4 , 4 , 3 , 13 , 5 , 12 ]
+                                    , [ 0 , 2 , 0 , 3 , 3 , 2 , 12 , 4 , 11 ]
+                                    ]
+                              }
+                            , { activity = 4
+                              , divIndex = 7
+                              , ifFalse = 0
+                              , ifTrue = 2
+                              , index = 1
+                              , op = Add 6
+                              , starting =
+                                    [ [ 1 , 2 , 2 , 0 , 0 , 12 , 9 , 1 , 8 ]
+                                    , [ 0 , 1 , 4 , 6 , 8 , 9 , 8 , 3 , 9 ]
+                                    , [ 1 , 2 , 0 , 3 , 6 , 6 , 12 , 3 , 2 ]
+                                    , [ 0 , 1 , 4 , 0 , 7 , 4 , 5 , 12 , 11 ]
+                                    , [ 1 , 0 , 3 , 5 , 6 , 2 , 16 , 12 , 15 ]
+                                    , [ 0 , 1 , 2 , 4 , 7 , 0 , 11 , 7 , 5 ]
+                                    ]
+                              }
+                            , { activity = 3
+                              , divIndex = 5
+                              , ifFalse = 3
+                              , ifTrue = 1
+                              , index = 2
+                              , op = Square
+                              , starting = []
+                              }
+                            , { activity = 6
+                              , divIndex = 6
+                              , ifFalse = 1
+                              , ifTrue = 0
+                              , index = 3
+                              , op = Add 3
+                              , starting = []
+                              }
                             ]
-            , test "example" <| \_ -> example1 |> part1 |> Expect.equal 10605
-            , test "input" <| \_ -> input |> part1 |> Expect.equal 120756
+            , test "example 20 rounds" <| \_ -> example1 |> part2 20 |> Expect.equal (99 * 103)
+            , test "example" <| \_ -> example1 |> part2 10000 |> Expect.equal 2713310158
+            , test "input" <| \_ -> input |> part2 10000 |> Expect.equal 39109444654
             ]
-        , skip <|
-            describe "part 2"
-                [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 0
-                , test "input" <| \_ -> input |> part2 |> Expect.equal 0
-                ]
         ]
+
+
+primes =
+    [ 2, 3, 5, 7, 11, 13, 17, 19, 23 ]
+
+
+type alias Num =
+    List Int
+
+
+toNum i =
+    primes
+        |> L.map (\p -> modBy p i)
 
 
 type Op
@@ -110,9 +168,9 @@ type Op
 
 type alias Monkey =
     { index : Int
-    , starting : List Int
+    , starting : List Num
     , op : Op
-    , div : Int
+    , divIndex : Int
     , ifTrue : Int
     , ifFalse : Int
     , activity : Int
@@ -130,7 +188,8 @@ parseMonkey input =
 
                     _ ->
                         Debug.todo (String.concat [ "bad monkeyStr ", monkeyStr ])
-            , starting = startingStr |> String.split "," |> List.map (String.trim >> String.toInt >> fromJust)
+            , starting =
+                startingStr |> String.split "," |> List.map (String.trim >> String.toInt >> fromJust >> toNum)
             , op =
                 case opStr |> String.words of
                     [ "new", "=", "old", "*", "old" ] ->
@@ -144,10 +203,13 @@ parseMonkey input =
 
                     _ ->
                         Debug.todo (String.concat [ "bad op ", opStr ])
-            , div =
+            , divIndex =
                 case testStr |> String.words of
                     [ "divisible", "by", divisor ] ->
-                        divisor |> String.toInt |> fromJust
+                        divisor
+                            |> String.toInt
+                            |> fromJust
+                            |> (\d -> LE.findIndex ((==) d) primes |> fromJust)
 
                     _ ->
                         Debug.todo (String.concat [ "bad test ", testStr ])
@@ -185,7 +247,9 @@ round monkeys =
         applyMonkeyAt : Int -> List Monkey -> List Monkey
         applyMonkeyAt i ms =
             let
-                m = LE.getAt i ms |> fromJust
+                m =
+                    LE.getAt i ms |> fromJust
+
                 ( ( t1, items1 ), ( t2, items2 ) ) =
                     evalMonkey m
             in
@@ -199,32 +263,52 @@ round monkeys =
 
 
 type alias MonkeyResult =
-    ( ( Int, List Int ), ( Int, List Int ) )
+    ( ( Int, List Num ), ( Int, List Num ) )
+
+
+numAddInt mods i =
+    List.map2 (\m p -> modBy p (m + i)) mods primes
+
+
+numMulInt mods i =
+    List.map2 (\m p -> modBy p (m * i)) mods primes
+
+
+numSquare mods =
+    List.map2 (\m p -> modBy p (m * m)) mods primes
+
+
+numDivisibleBy : Int -> Num -> Bool
+numDivisibleBy index mods =
+    LE.getAt index mods |> fromJust |> (==) 0
+
+
+
+--numDivisibleBy d n =
+--    modBy d (fromNat n) == 0
 
 
 evalMonkey : Monkey -> MonkeyResult
 evalMonkey monkey =
     let
+        processItem : Num -> ( Bool, Num )
         processItem item =
             let
                 afterOp =
                     case monkey.op of
                         Add n ->
-                            item + n
+                            numAddInt item n
 
                         Mul n ->
-                            item * n
+                            numMulInt item n
 
                         Square ->
-                            item * item
-
-                afterBored =
-                    afterOp // 3
+                            numSquare item
 
                 result =
-                    modBy monkey.div afterBored == 0
+                    numDivisibleBy monkey.divIndex afterOp
             in
-            ( result, afterBored )
+            ( result, afterOp )
 
         processed =
             List.map processItem monkey.starting
@@ -238,24 +322,19 @@ evalMonkey monkey =
     ( ( monkey.ifTrue, trueItems ), ( monkey.ifFalse, falseItems ) )
 
 
-part1 input =
+part2 roundCount input =
     let
         monkeys =
             input |> parseMonkeys
 
-        after20rounds =
-            List.range 0 19
-            |> List.foldl (\_ ms -> round ms) monkeys
-            |> Debug.log "after"
+        afterRounds =
+            List.range 0 (roundCount - 1)
+                |> List.foldl (\_ ms -> round ms) monkeys
+                |> Debug.log "after"
     in
-    after20rounds
-    |> List.map .activity
-    |> List.sort
-    |> List.reverse
-    |> List.take 2
-    |> List.foldl (*) 1
-
-
-part2 : String -> Int
-part2 input =
-    0
+    afterRounds
+        |> List.map .activity
+        |> List.sort
+        |> List.reverse
+        |> List.take 2
+        |> List.foldl (*) 1
