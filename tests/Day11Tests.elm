@@ -8,6 +8,7 @@ import Expect
 import Fuzz
 import List as L
 import List.Extra as LE
+import Regex
 import Set
 import String as S
 import String.Extra
@@ -59,8 +60,7 @@ suite =
     If false: throw to monkey 3"""
                         |> parseMonkey
                         |> Expect.equal
-                            { index = 0
-                            , starting = L.map toNum [ 79, 98 ]
+                            { starting = L.map toNum [ 79, 98 ]
                             , op = Mul 19
                             , divIndex = 8
                             , ifTrue = 2
@@ -70,8 +70,7 @@ suite =
             , test "evalMonkey" <|
                 \_ ->
                     evalMonkey
-                        { index = 0
-                        , starting = L.map toNum [ 79, 98, 23 ]
+                        { starting = L.map toNum [ 79, 98, 23 ]
                         , op = Mul 19
                         , divIndex = 8
                         , ifTrue = 2
@@ -79,7 +78,7 @@ suite =
                         , activity = 0
                         }
                         |> Expect.equal
-                            ((2,[[1,2,2,3,8,8,12,0,0]]),(3,[[1,1,1,3,5,6,5,0,6],[0,2,2,0,3,3,9,0,22]]))
+                            ( ( 2, [ [ 1, 2, 2, 3, 8, 8, 12, 0, 0 ] ] ), ( 3, [ [ 1, 1, 1, 3, 5, 6, 5, 0, 6 ], [ 0, 2, 2, 0, 3, 3, 9, 0, 22 ] ] ) )
             , test "toNum" <| \_ -> toNum 123 |> Expect.equal [ 1, 0, 3, 4, 2, 6, 4, 9, 8 ]
             , test "numAddInt" <|
                 \_ ->
@@ -99,35 +98,32 @@ suite =
                               , divIndex = 8
                               , ifFalse = 3
                               , ifTrue = 2
-                              , index = 0
                               , op = Mul 19
                               , starting =
-                                    [ [ 0 , 0 , 0 , 4 , 5 , 8 , 9 , 3 , 14 ]
-                                    , [ 1 , 2 , 1 , 1 , 5 , 6 , 3 , 14 , 2 ]
-                                    , [ 1 , 0 , 1 , 4 , 4 , 3 , 13 , 5 , 12 ]
-                                    , [ 0 , 2 , 0 , 3 , 3 , 2 , 12 , 4 , 11 ]
+                                    [ [ 0, 0, 0, 4, 5, 8, 9, 3, 14 ]
+                                    , [ 1, 2, 1, 1, 5, 6, 3, 14, 2 ]
+                                    , [ 1, 0, 1, 4, 4, 3, 13, 5, 12 ]
+                                    , [ 0, 2, 0, 3, 3, 2, 12, 4, 11 ]
                                     ]
                               }
                             , { activity = 4
                               , divIndex = 7
                               , ifFalse = 0
                               , ifTrue = 2
-                              , index = 1
                               , op = Add 6
                               , starting =
-                                    [ [ 1 , 2 , 2 , 0 , 0 , 12 , 9 , 1 , 8 ]
-                                    , [ 0 , 1 , 4 , 6 , 8 , 9 , 8 , 3 , 9 ]
-                                    , [ 1 , 2 , 0 , 3 , 6 , 6 , 12 , 3 , 2 ]
-                                    , [ 0 , 1 , 4 , 0 , 7 , 4 , 5 , 12 , 11 ]
-                                    , [ 1 , 0 , 3 , 5 , 6 , 2 , 16 , 12 , 15 ]
-                                    , [ 0 , 1 , 2 , 4 , 7 , 0 , 11 , 7 , 5 ]
+                                    [ [ 1, 2, 2, 0, 0, 12, 9, 1, 8 ]
+                                    , [ 0, 1, 4, 6, 8, 9, 8, 3, 9 ]
+                                    , [ 1, 2, 0, 3, 6, 6, 12, 3, 2 ]
+                                    , [ 0, 1, 4, 0, 7, 4, 5, 12, 11 ]
+                                    , [ 1, 0, 3, 5, 6, 2, 16, 12, 15 ]
+                                    , [ 0, 1, 2, 4, 7, 0, 11, 7, 5 ]
                                     ]
                               }
                             , { activity = 3
                               , divIndex = 5
                               , ifFalse = 3
                               , ifTrue = 1
-                              , index = 2
                               , op = Square
                               , starting = []
                               }
@@ -135,7 +131,6 @@ suite =
                               , divIndex = 6
                               , ifFalse = 1
                               , ifTrue = 0
-                              , index = 3
                               , op = Add 3
                               , starting = []
                               }
@@ -167,8 +162,7 @@ type Op
 
 
 type alias Monkey =
-    { index : Int
-    , starting : List Num
+    { starting : List Num
     , op : Op
     , divIndex : Int
     , ifTrue : Int
@@ -177,56 +171,43 @@ type alias Monkey =
     }
 
 
+monkeyRE =
+    Regex.fromString """Monkey \\d+:
+  Starting items: (.*)
+  Operation: new = old ([*+]) (\\d+|old)
+  Test: divisible by (\\d+)
+    If true: throw to monkey (\\d+)
+    If false: throw to monkey (\\d+)"""
+        |> fromJust
+
+
 parseMonkey : String -> Monkey
 parseMonkey input =
-    case input |> String.lines |> List.map (String.split ":") of
-        [ [ monkeyStr, "" ], [ "  Starting items", startingStr ], [ "  Operation", opStr ], [ "  Test", testStr ], [ "    If true", ifTrueStr ], [ "    If false", ifFalseStr ] ] ->
-            { index =
-                case String.words monkeyStr of
-                    [ "Monkey", indexStr ] ->
-                        indexStr |> String.toInt |> fromJust
-
-                    _ ->
-                        Debug.todo (String.concat [ "bad monkeyStr ", monkeyStr ])
-            , starting =
-                startingStr |> String.split "," |> List.map (String.trim >> String.toInt >> fromJust >> toNum)
+    case
+        Regex.find monkeyRE input
+            |> List.concatMap .submatches
+            |> List.filterMap identity
+            |> List.map (\x -> ( x, String.toInt x ))
+    of
+        [ ( startingStr, _ ), ( opStr, _ ), ( argStr, argInt ), ( _, Just divInt ), ( _, Just ifTrueInt ), ( _, Just ifFalseInt ) ] ->
+            { starting =
+                startingStr |> String.split "," |> List.filterMap (String.trim >> String.toInt >> Maybe.map toNum)
             , op =
-                case opStr |> String.words of
-                    [ "new", "=", "old", "*", "old" ] ->
+                case ( opStr, argInt ) of
+                    ( "*", Nothing ) ->
                         Square
 
-                    [ "new", "=", "old", "*", mult ] ->
-                        Mul (mult |> String.toInt |> fromJust)
+                    ( "*", Just arg ) ->
+                        Mul arg
 
-                    [ "new", "=", "old", "+", add ] ->
-                        Add (add |> String.toInt |> fromJust)
+                    ( "+", Just arg ) ->
+                        Add arg
 
                     _ ->
                         Debug.todo (String.concat [ "bad op ", opStr ])
-            , divIndex =
-                case testStr |> String.words of
-                    [ "divisible", "by", divisor ] ->
-                        divisor
-                            |> String.toInt
-                            |> fromJust
-                            |> (\d -> LE.findIndex ((==) d) primes |> fromJust)
-
-                    _ ->
-                        Debug.todo (String.concat [ "bad test ", testStr ])
-            , ifTrue =
-                case ifTrueStr |> String.words of
-                    [ "throw", "to", "monkey", target ] ->
-                        target |> String.toInt |> fromJust
-
-                    _ ->
-                        Debug.todo (String.concat [ "bad ifTrue ", ifTrueStr ])
-            , ifFalse =
-                case ifFalseStr |> String.words of
-                    [ "throw", "to", "monkey", target ] ->
-                        target |> String.toInt |> fromJust
-
-                    _ ->
-                        Debug.todo (String.concat [ "bad ifFalse ", ifFalseStr ])
+            , divIndex = divInt |> (\d -> LE.findIndex ((==) d) primes |> fromJust)
+            , ifTrue = ifTrueInt
+            , ifFalse = ifFalseInt
             , activity = 0
             }
 
@@ -254,7 +235,7 @@ round monkeys =
                     evalMonkey m
             in
             ms
-                |> LE.updateAt m.index (\tm -> { tm | starting = [], activity = tm.activity + (tm.starting |> List.length) })
+                |> LE.updateAt i (\tm -> { tm | starting = [], activity = tm.activity + (tm.starting |> List.length) })
                 |> LE.updateAt t1 (\tm -> { tm | starting = tm.starting ++ items1 })
                 |> LE.updateAt t2 (\tm -> { tm | starting = tm.starting ++ items2 })
     in
