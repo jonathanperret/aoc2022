@@ -48,7 +48,7 @@ Monkey 3:
 suite : Test
 suite =
     describe "day 11"
-        [ describe "part 1"
+        [ describe "part 2"
             [ test "parseMonkey" <|
                 \_ ->
                     """Monkey 0:
@@ -71,7 +71,7 @@ suite =
                 \_ ->
                     evalMonkey
                         { index = 0
-                        , starting = [ 79, 98, 23 * 7 * 3 ]
+                        , starting = [ 79, 98, 23 * 7 ]
                         , op = Mul 19
                         , div = 23
                         , ifTrue = 2
@@ -79,26 +79,22 @@ suite =
                         , activity = 0
                         }
                         |> Expect.equal
-                            ( ( 2, [ 23 * 7 * 19 ] ), ( 3, [ 500, 620 ] ) )
+                            ( ( 2, [ 23 * 7 * 19 ] ), ( 3, [ 1501, 1862 ] ) )
             , test "round" <|
                 \_ ->
                     example1
                         |> parseMonkeys
                         |> round
                         |> Expect.equal
-                            [ { activity = 2, div = 23, ifFalse = 3, ifTrue = 2, index = 0, op = Mul 19, starting = [ 20, 23, 27, 26 ] }
-                            , { activity = 4, div = 19, ifFalse = 0, ifTrue = 2, index = 1, op = Add 6, starting = [2080, 25, 167, 207, 401, 1046] }
-                            , { activity = 3, div = 13, ifFalse = 3, ifTrue = 1, index = 2, op = Square, starting = [] }
-                            , { activity = 5, div = 17, ifFalse = 1, ifTrue = 0, index = 3, op = Add 3, starting = [] }
-                            ]
-            , test "example" <| \_ -> example1 |> part1 |> Expect.equal 10605
-            , test "input" <| \_ -> input |> part1 |> Expect.equal 120756
+                            [{ activity = 2, div = 23, ifFalse = 3, ifTrue = 2, index = 0, op = Mul 19, starting = [60,71,81,80] },
+                            { activity = 4, div = 19, ifFalse = 0, ifTrue = 2, index = 1, op = Add 6, starting = [77,1504,1865,6244,3603,9412] },
+                            { activity = 3, div = 13, ifFalse = 3, ifTrue = 1, index = 2, op = Square, starting = [] },
+                            { activity = 6, div = 17, ifFalse = 1, ifTrue = 0, index = 3, op = Add 3, starting = [] }]
+            , test "example 20 rounds" <| \_ -> example1 |> part2 20 |> Expect.equal (103 * 99)
+            , test "example 1000 rounds" <| \_ -> example1 |> part2 1000 |> Expect.equal (5204 * 5192)
+            , test "example 10000 rounds" <| \_ -> example1 |> part2 10000 |> Expect.equal 2713310158
+            , test "input" <| \_ -> input |> part2 10000 |> Expect.equal 39109444654
             ]
-        , skip <|
-            describe "part 2"
-                [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 0
-                , test "input" <| \_ -> input |> part2 |> Expect.equal 0
-                ]
         ]
 
 
@@ -193,9 +189,15 @@ round monkeys =
                 |> LE.updateAt m.index (\tm -> { tm | starting = [], activity = tm.activity + (tm.starting |> List.length) })
                 |> LE.updateAt t1 (\tm -> { tm | starting = tm.starting ++ items1 })
                 |> LE.updateAt t2 (\tm -> { tm | starting = tm.starting ++ items2 })
+
+        divProduct =
+            monkeys
+            |> List.map .div
+            |> List.foldl (*) 1
     in
     List.range 0 (List.length monkeys - 1)
         |> List.foldl applyMonkeyAt monkeys
+        |> List.map (\m -> { m | starting = m.starting |> List.map (modBy divProduct) })
 
 
 type alias MonkeyResult =
@@ -218,8 +220,7 @@ evalMonkey monkey =
                         Square ->
                             item * item
 
-                afterBored =
-                    afterOp // 3
+                afterBored = afterOp -- // 3
 
                 result =
                     modBy monkey.div afterBored == 0
@@ -238,24 +239,20 @@ evalMonkey monkey =
     ( ( monkey.ifTrue, trueItems ), ( monkey.ifFalse, falseItems ) )
 
 
-part1 input =
+part2 rounds input =
     let
         monkeys =
             input |> parseMonkeys
 
-        after20rounds =
-            List.range 0 19
-            |> List.foldl (\_ ms -> round ms) monkeys
+        afterRounds =
+            List.range 1 rounds
+            |> List.foldl (\i ms -> round ms
+                |> Debug.log (String.concat ["round ",(String.fromInt i)])) monkeys
             |> Debug.log "after"
     in
-    after20rounds
+    afterRounds
     |> List.map .activity
     |> List.sort
     |> List.reverse
     |> List.take 2
     |> List.foldl (*) 1
-
-
-part2 : String -> Int
-part2 input =
-    0
