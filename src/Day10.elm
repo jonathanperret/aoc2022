@@ -43,9 +43,8 @@ part1 input =
         |> L.map (\( c, x ) -> c * x)
         |> L.sum
 
-
-part2 : String -> List String
-part2 input =
+pixels : String -> List Bool
+pixels input =
     xvalues input
         |> L.indexedMap
             (\c x ->
@@ -53,14 +52,17 @@ part2 input =
                     col =
                         modBy 40 c
 
-                    hit =
-                        x == col || (x - 1) == col || (x + 1) == col
-                in
+                in x == col || (x - 1) == col || (x + 1) == col
+            )
+
+part2 : String -> List String
+part2 input =
+    pixels input
+        |> L.map (\hit ->
                 if hit then
                     "#"
 
                 else
-                    "."
-            )
+                    ".")
         |> LE.groupsOf 40
         |> L.map (String.join "")
