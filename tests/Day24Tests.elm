@@ -16,10 +16,8 @@ import Debug as D
 import Array exposing (Array)
 
 
-example1 =
-    """
-
-"""
+example1 = """paste
+here"""
 
 
 suite : Test
