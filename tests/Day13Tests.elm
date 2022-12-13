@@ -15,6 +15,7 @@ import List as L
 import Debug as D
 import Array exposing (Array)
 import Json.Decode as JD
+import Basics.Extra exposing (..)
 import Day13 exposing (..)
 
 example1 = [
@@ -42,27 +43,30 @@ suite =
     describe "day 13"
         [ describe "part 1"
             [ test "example" <| \_ -> example1 |> part1 |> Expect.equal 13
-            , test "input" <| \_ -> input |> part1 |> Expect.equal 0
+            , test "input" <| \_ -> input |> part1 |> Expect.equal 5292
+            ]
+        , describe "part 2"
+            [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 140
+            , test "input" <| \_ -> input |> part2 |> Expect.equal 23868
             ]
         ]
+
+findMap2: (a -> b -> Maybe c) -> List a -> List b -> Maybe c
+findMap2 f l1 l2 = LE.zip l1 l2 |> LE.findMap (uncurry f)
 
 isInRightOrder: Message -> Message -> Maybe Bool
 isInRightOrder m1 m2 =
     (case (m1, m2) of
-        (Num a, Num b) -> if a < b then Just True else if a > b then Just False else Nothing
         (Num a, Msg b) -> isInRightOrder (Msg [m1]) m2
         (Msg a, Num b) -> isInRightOrder m1 (Msg [m2])
+        (Num a, Num b) -> if a==b then Nothing else Just (a < b)
         (Msg a, Msg b) ->
-            let
-                result = L.map2 isInRightOrder a b |> L.filterMap identity |> L.head
-            in
-            case result of
-                Just _ -> result
+            case findMap2 isInRightOrder a b of
+                Just r -> Just r
                 Nothing ->
-                    if L.length a < L.length b then Just True
-                    else if L.length a > L.length b then Just False
-                    else Nothing)
-    |> Debug.log (Debug.toString m1 ++ " " ++ Debug.toString m2)
+                    if L.length a == L.length b then Nothing
+                    else Just (L.length a < L.length b))
+    --|> Debug.log (Debug.toString m1 ++ " " ++ Debug.toString m2)
 
 
 part1 input =
@@ -73,3 +77,19 @@ part1 input =
         _ -> Debug.todo "bad pair")
     |> L.indexedMap (\i t -> if t then (i + 1) else 0)
     |> L.foldl (+) 0
+
+compareMsg: Message -> Message -> Order
+compareMsg m1 m2 = case isInRightOrder m1 m2 of
+    Just True -> LT
+    Just False -> GT
+    Nothing -> EQ
+
+part2 input =
+    input
+    |> (L.append [ Msg [Msg [Num 2]], Msg [Msg [Num 6]] ])
+    |> L.sortWith compareMsg
+    |> L.indexedMap (\i m ->
+        case m of
+           Msg [Msg [Num x]] -> if x == 2 || x == 6 then (i + 1) else 1
+           _ -> 1)
+    |> L.foldl (*) 1
