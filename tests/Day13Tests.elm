@@ -51,45 +51,34 @@ suite =
             ]
         ]
 
-findMap2: (a -> b -> Maybe c) -> List a -> List b -> Maybe c
-findMap2 f l1 l2 = LE.zip l1 l2 |> LE.findMap (uncurry f)
-
-isInRightOrder: Message -> Message -> Maybe Bool
-isInRightOrder m1 m2 =
-    (case (m1, m2) of
-        (Num a, Msg b) -> isInRightOrder (Msg [m1]) m2
-        (Msg a, Num b) -> isInRightOrder m1 (Msg [m2])
-        (Num a, Num b) -> if a==b then Nothing else Just (a < b)
-        (Msg a, Msg b) ->
-            case findMap2 isInRightOrder a b of
-                Just r -> Just r
-                Nothing ->
-                    if L.length a == L.length b then Nothing
-                    else Just (L.length a < L.length b))
-    --|> Debug.log (Debug.toString m1 ++ " " ++ Debug.toString m2)
-
+compareMsg: Message -> Message -> Order
+compareMsg m1 m2 =
+    case (m1, m2) of
+        (Num a, Msg b) -> compareMsg (Msg [m1]) m2
+        (Msg a, Num b) -> compareMsg m1 (Msg [m2])
+        (Num a, Num b) -> compare a b
+        (Msg (a::ra), Msg (b::rb)) ->
+            case compareMsg a b of
+                EQ -> compareMsg (Msg ra) (Msg rb)
+                o -> o
+        (Msg [], Msg []) -> EQ
+        (Msg [], Msg _) -> LT
+        (Msg _, Msg []) -> GT
 
 part1 input =
     input
     |> LE.groupsOf 2
     |> L.map (\pair -> case pair of
-        [m1,m2] -> isInRightOrder m1 m2 |> Maybe.withDefault True
+        [m1,m2] -> (compareMsg m1 m2 == LT)
         _ -> Debug.todo "bad pair")
     |> L.indexedMap (\i t -> if t then (i + 1) else 0)
     |> L.foldl (+) 0
 
-compareMsg: Message -> Message -> Order
-compareMsg m1 m2 = case isInRightOrder m1 m2 of
-    Just True -> LT
-    Just False -> GT
-    Nothing -> EQ
+markers = [ Msg [Msg [Num 2]], Msg [Msg [Num 6]] ]
 
 part2 input =
     input
-    |> (L.append [ Msg [Msg [Num 2]], Msg [Msg [Num 6]] ])
+    |> L.append markers
     |> L.sortWith compareMsg
-    |> L.indexedMap (\i m ->
-        case m of
-           Msg [Msg [Num x]] -> if x == 2 || x == 6 then (i + 1) else 1
-           _ -> 1)
-    |> L.foldl (*) 1
+    |> LE.findIndices (\m -> L.member m markers)
+    |> L.foldl (\i r -> (i+1)*r) 1
