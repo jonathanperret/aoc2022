@@ -9,7 +9,7 @@ import Fuzz
 import List as L
 import List.Extra as LE
 import Regex
-import Set
+import Set exposing (Set)
 import String as S
 import String.Extra
 import Test exposing (..)
@@ -53,6 +53,11 @@ suite =
         ]
 
 
+type alias Point =
+    ( Int, Int )
+
+
+parseLine : String -> List Point
 parseLine line =
     Regex.find (Regex.fromString "\\d+" |> Maybe.withDefault Regex.never) line
         |> L.map .match
@@ -69,8 +74,9 @@ parseLine line =
             )
 
 
-expand points =
-    points
+expand : List Point -> Set Point
+expand vertices =
+    vertices
         |> LE.groupsOfWithStep 2 1
         |> L.map
             (\pair ->
@@ -109,39 +115,44 @@ expand points =
                         step p1
 
                     _ ->
-                        Debug.todo "bad points"
+                        Debug.todo "bad vertices"
             )
         |> L.concat
         |> Set.fromList
-        |> Set.insert (L.head points |> fromJust)
+        |> Set.insert (L.head vertices |> fromJust)
 
 
-dropOne points =
-    dropFrom ( 500, 0 ) points
+dropSpots : Point -> List Point
+dropSpots ( x, y ) =
+    [ ( x, y + 1 ), ( x - 1, y + 1 ), ( x + 1, y + 1 ) ]
 
 
-dropFrom : ( Int, Int ) -> Set.Set ( Int, Int ) -> Set.Set ( Int, Int )
-dropFrom ( x, y ) points =
+dropOne rocks =
     let
-        spot =
-            [ ( x, y + 1 ), ( x - 1, y + 1 ), ( x + 1, y + 1 ) ]
-                |> LE.find (\p -> Set.member p points |> not)
+        dropFrom : Point -> Set.Set Point -> Set.Set Point
+        dropFrom ( x, y ) occupied =
+            let
+                spot =
+                    dropSpots ( x, y )
+                        |> LE.find (\p -> Set.member p occupied |> not)
+            in
+            case spot of
+                Just p ->
+                    if y < 1000 then
+                        dropFrom p occupied
+
+                    else
+                        occupied
+
+                Nothing ->
+                    Set.insert ( x, y ) occupied
     in
-    case spot of
-        Just p ->
-            if y < 1000 then
-                dropFrom p points
-
-            else
-                points
-
-        Nothing ->
-            Set.insert ( x, y ) points
+    dropFrom ( 500, 0 ) rocks
 
 
 part1 input =
     let
-        points0 =
+        rocks =
             input
                 |> S.lines
                 |> L.map (parseLine >> expand)
@@ -158,10 +169,10 @@ part1 input =
             else
                 loop newPoints (n + 1)
     in
-    loop points0 0
+    loop rocks 0
 
 
-addFloor : List (List ( Int, Int )) -> List (List ( Int, Int ))
+addFloor : List (List Point) -> List (List Point)
 addFloor lines =
     let
         ymax =
@@ -174,25 +185,40 @@ addFloor lines =
     [ ( 500 - (ymax + 2), ymax + 2 ), ( 500 + (ymax + 2), ymax + 2 ) ] :: lines
 
 
+dropMany : Set Point -> Int
+dropMany rocks =
+    let
+        dropRow : Set Point -> Maybe (Set Point)
+        dropRow grainsRow =
+            let
+                nextGrains =
+                    grainsRow
+                        |> Set.toList
+                        |> L.concatMap dropSpots
+                        |> Set.fromList
+
+                survivingGrains =
+                    Set.diff nextGrains rocks
+            in
+            if Set.isEmpty survivingGrains then
+                Nothing
+
+            else
+                Just survivingGrains
+    in
+    LE.iterate dropRow (Set.fromList [ ( 500, 0 ) ])
+        |> L.map Set.size
+        |> L.foldl (+) 0
+
+
 part2 input =
     let
-        points0 =
+        rocks =
             input
                 |> S.lines
                 |> L.map parseLine
                 |> addFloor
                 |> L.map expand
                 |> L.foldl Set.union Set.empty
-
-        loop points n =
-            let
-                newPoints =
-                    dropOne points
-            in
-            if Set.size newPoints == Set.size points then
-                n
-
-            else
-                loop newPoints (n + 1)
     in
-    loop points0 0
+    dropMany rocks
