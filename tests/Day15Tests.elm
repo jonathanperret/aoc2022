@@ -45,11 +45,11 @@ suite =
             , test "beacon topright" <|\_-> seenOnRow 10 { bx = 2, by = 10, sx = 0, sy = 11 } |> Expect.equal (Just (-2, 1))
             , test "beacon bottom" <|\_-> seenOnRow 10 { bx = 2, by = 10, sx = 2, sy = 0 } |> Expect.equal Nothing
             , test "example" <| \_ -> example1 |> part1 10 |> Expect.equal 26
-            , test "input" <| \_ -> input |> part1 2000000 |> Expect.equal 1
+            , test "input" <| \_ -> input |> part1 2000000 |> Expect.equal 4724228
             ]
-        , skip <| describe "part 2"
-            [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 0
-            , test "input" <| \_ -> input |> part2 |> Expect.equal 0
+        , describe "part 2"
+            [ test "example" <| \_ -> example1 |> part2 20 |> Expect.equal 56000011
+            , test "input" <| \_ -> input |> part2 4000000 |> Expect.equal 13622251246513
             ]
         ]
 
@@ -85,10 +85,28 @@ seenOnRow y0 { sx, sy, bx, by } =
     else
         Just (rmin, rmax)
 
+seenOnRowNoBeacon : Int -> Sensor -> Maybe (Int, Int)
+seenOnRowNoBeacon y0 { sx, sy, bx, by } =
+    let
+        _ = if sx == bx && sy == by then Debug.todo "oops" else ()
+
+        dist = abs ( bx - sx ) + abs ( by - sy )
+        xmin = sx - dist
+        xmax = sx + dist
+        ymin = sy - dist
+        ymax = sy + dist
+        rmin = xmin + abs (sy - y0)
+        rmax = xmax - abs (sy - y0)
+    in
+    if rmin > rmax then
+        Nothing
+    else
+        Just (rmin, rmax)
+
 mergeSpans: (Int, Int) -> (Int, Int) -> List (Int, Int)
 mergeSpans (xmin1, xmax1) (xmin2, xmax2) =
     (if xmin1 > xmin2 then mergeSpans (xmin2, xmax2) (xmin1, xmax1)
-    else if xmax1 < xmin2 then [(xmin2, xmax2), (xmin1, xmax1)]
+    else if xmax1 < (xmin2 - 1) then [(xmin2, xmax2), (xmin1, xmax1)]
     else if xmax2 < xmax1 then [ (xmin1, xmax1) ]
     else [ (xmin1, xmax2) ])
     --|>Debug.log ("merging " ++ Debug.toString (xmin1,xmax1) ++ Debug.toString (xmin2, xmax2))
@@ -119,5 +137,44 @@ part1 targetRow input =
     in
     merged
 
-part2: String -> Int
-part2 input = 0
+intersectSpans: (Int, Int) -> (Int, Int) -> Maybe (Int, Int)
+intersectSpans (xmin1, xmax1) (xmin2, xmax2) =
+    (if xmin1 > xmin2 then intersectSpans (xmin2, xmax2) (xmin1, xmax1)
+    else if xmax1 < xmin2 then Nothing
+    else if xmax2 < xmax1 then Just (xmin2, xmax2)
+    else Just (xmin2, xmax1))
+
+part2 range input =
+    let
+        sensors =
+            input
+            |> S.lines
+            |> L.map parseLine
+
+        doRow y0 =
+                let
+                    spans = L.filterMap (\s -> seenOnRowNoBeacon y0 s) sensors
+
+                    merged =
+                        spans
+                        |> L.sortBy Tuple.first
+                        |> L.foldl (\s ss -> (case ss of
+                            [] -> [s]
+                            h::t -> mergeSpans h s ++ t)) []
+                        |> L.sortBy Tuple.first
+                        --|> Debug.log ("beforeint " ++ Debug.toString y0)
+                        |> L.filterMap (intersectSpans (0, range))
+                        --|> Debug.log ("spans " ++ Debug.toString y0)
+                        |> L.map (\(xmin, xmax) -> xmax - xmin + 1)
+
+                    found = L.length merged == 2
+
+                in
+                if found then
+                    Just ((L.head merged |> fromJust) * 4000000 + y0)
+                else
+                    Nothing
+    in
+    L.range 0 range
+    |> LE.findMap doRow
+    |> fromJust
