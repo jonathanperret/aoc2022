@@ -29,7 +29,7 @@ suite =
             ]
         , skip <| describe "part 2"
             [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 0
-            , test "input" <| \_ -> input |> part2 |> Expect.equal 0
+            , skip <| test "input" <| \_ -> input |> part2 |> Expect.equal 0
             ]
         ]
 
