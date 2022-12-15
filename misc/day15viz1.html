@@ -1,0 +1,73 @@
+<div id="output"></div>
+<script>
+
+const width = 512;
+const height = width;
+const sensors0 = [
+  { x: 1638847, y: 3775370, beacon: { x: 2498385, y: 3565515 } },
+  { x: 3654046, y: 17188, beacon: { x: 3628729, y: 113719 } },
+  { x: 3255262, y: 2496809, beacon: { x: 3266439, y: 2494761 } },
+  { x: 3743681, y: 1144821, beacon: { x: 3628729, y: 113719 } },
+  { x: 801506, y: 2605771, beacon: { x: 1043356, y: 2000000 } },
+  { x: 2933878, y: 5850, beacon: { x: 3628729, y: 113719 } },
+  { x: 3833210, y: 12449, beacon: { x: 3628729, y: 113719 } },
+  { x: 2604874, y: 3991135, beacon: { x: 2498385, y: 3565515 } },
+  { x: 1287765, y: 1415912, beacon: { x: 1043356, y: 2000000 } },
+  { x: 3111474, y: 3680987, beacon: { x: 2498385, y: 3565515 } },
+  { x: 2823460, y: 1679092, beacon: { x: 3212538, y: 2537816 } },
+  { x: 580633, y: 1973060, beacon: { x: 1043356, y: 2000000 } },
+  { x: 3983949, y: 236589, beacon: { x: 3628729, y: 113719 } },
+  { x: 3312433, y: 246388, beacon: { x: 3628729, y: 113719 } },
+  { x: 505, y: 67828, beacon: { x: -645204, y: 289136 } },
+  { x: 1566406, y: 647261, beacon: { x: 1043356, y: 2000000 } },
+  { x: 2210221, y: 2960790, beacon: { x: 2498385, y: 3565515 } },
+  { x: 3538385, y: 1990300, beacon: { x: 3266439, y: 2494761 } },
+  { x: 3780372, y: 2801075, beacon: { x: 3266439, y: 2494761 } },
+  { x: 312110, y: 1285740, beacon: { x: 1043356, y: 2000000 } },
+  { x: 51945, y: 2855778, beacon: { x: -32922, y: 3577599 } },
+  { x: 1387635, y: 2875487, beacon: { x: 1043356, y: 2000000 } },
+  { x: 82486, y: 3631563, beacon: { x: -32922, y: 3577599 } },
+  { x: 3689149, y: 3669721, beacon: { x: 3481800, y: 4169166 } },
+  { x: 2085975, y: 2190591, beacon: { x: 1043356, y: 2000000 } },
+  { x: 712588, y: 3677889, beacon: { x: -32922, y: 3577599 } },
+  { x: 22095, y: 3888893, beacon: { x: -32922, y: 3577599 } },
+  { x: 3248397, y: 2952817, beacon: { x: 3212538, y: 2537816 } },
+];
+const sensors = [{x:100000*8,y:100000*5,beacon:{x:100000*(8+3),y:5}},
+{x:100000*12,y:100000*6,beacon:{x:100000*(12+1),y:6}},
+{x:100000*11,y:100000*9,beacon:{x:100000*(11+2),y:9}},
+{x:100000*9,y:100000*9,beacon:{x:100000*(9+1),y:9}},
+];
+
+const solution = { x:3405561+1, y:3246513 };
+
+let svg = `<svg width="${width}" height="${height}">\n`;
+
+const scale = width / 4000000;
+const fudge = 1;
+
+sensors.forEach((sensor, i) => {
+  const x = sensor.x * scale;
+  const y = sensor.y * scale;
+  const diamondSize = (Math.abs(sensor.x-sensor.beacon.x) + Math.abs(sensor.y - sensor.beacon.y))*scale;
+  // Calculate the coordinates of the diamond's four corners.
+  const x1 = x - diamondSize * fudge;
+  const y1 = y;
+  const x2 = x;
+  const y2 = y - diamondSize * fudge;
+  const x3 = x + diamondSize * fudge;
+  const y3 = y;
+  const x4 = x;
+  const y4 = y + diamondSize * fudge;
+
+  // Add a path element to the SVG string that draws the diamond
+  // using the calculated coordinates.
+  svg += `  <path d="M ${x1} ${y1} L ${x2} ${y2} L ${x3} ${y3} L ${x4} ${y4} Z" fill="hsl(${255*i/sensors.length},100%,50%)" fill-opacity="0.5" />\n`;
+});
+
+svg += `  <circle cx="${solution.x*scale}" cy="${solution.y*scale}" r="10" fill-opacity="0" stroke="red"/>\n`;
+svg += '</svg>';
+
+// Write the SVG string to a file or display it in the page.
+document.getElementById('output').innerHTML = svg;
+</script>

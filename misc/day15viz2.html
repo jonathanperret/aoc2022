@@ -1,0 +1,46 @@
+<div id="output"></div>
+<script>
+
+const width = 512;
+const height = width;
+
+const sensors =
+  [...
+
+    '[((8,4),2),((13,5),2),((11,9),2),((8,8),2)]'
+    //'[((9,6),1),((12,6),1),((11,8),1),((9,9),1)]'
+    .matchAll(/\(\((\d+),(\d+)\),(\d+)\)/g)]
+    .map(([_,x,y,r])=> ({x:parseInt(x),y:parseInt(y),r:parseInt(r)}))
+
+let svg = `<svg width="${width}" height="${height}" viewbox="4 1 13 12">\n`;
+
+sensors.forEach((sensor, i) => {
+  const radius = sensor.r;
+  const color = `hsl(${255*i/sensors.length},100%,50%)`;
+  const path = [];
+  for(let dy=-radius; dy <= radius; dy++) {
+    const dx = radius - Math.abs(dy);
+
+    path.unshift([sensor.x - dx, sensor.y + dy]);
+    path.push([sensor.x + dx + 1, sensor.y + dy]);
+
+
+    path.unshift([sensor.x - dx, sensor.y + dy + 1]);
+    path.push([sensor.x + dx + 1, sensor.y + dy + 1]);
+  console.log(path);
+  }
+
+
+  svg += `<path d="${path.map(([x,y],i)=>`${(i?'L':'M')} ${x} ${y}`).join(" ")} Z"
+                fill="hsl(${255*i/sensors.length},100%,50%)"
+                fill-opacity="0.5" stroke="black" stroke-width="0.05"/>\n`;
+                svg += `<text font-size="1" font-family="monospace"
+                          x=${sensor.x+0.2} y=${sensor.y+0.7}
+                          >${String.fromCodePoint(i+'a'.codePointAt(0))}</text>`;
+});
+svg += '</svg>';
+
+
+// Write the SVG string to a file or display it in the page.
+document.getElementById('output').innerHTML = svg;
+</script>
