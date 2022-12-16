@@ -1,35 +1,30 @@
-module Day16Tests exposing (..)
+port module Day16Cli exposing (..)
 
+import Json.Encode as E exposing (Value, int, object, string)
+import Platform exposing (worker)
+import Platform.Cmd as Cmd
+import Platform.Sub as Sub
+import List as L
 import AocUtil exposing (..)
-import Day16Input exposing (..)
+import Day16Input exposing (input)
 import Expect
 import Fuzz
 import List.Extra
 import List.Extra as LE
 import Set exposing (Set)
 import String.Extra
-import Test exposing (..)
 import Tuple
 import String as S
-import List as L
 import Debug as D exposing (log, todo)
 import Array exposing (Array)
 import Regex
 import Dict exposing (Dict)
+
 import Day16 exposing (..)
+import Day16Input exposing (..)
 
-suite : Test
-suite =
-    describe "day 16"
-        [ describe "part 2"
-            [ test "parseLine" <|\_-> "Valve AA has flow rate=0; tunnels lead to valves DD, II, BB"
-                |> parseLine |> Expect.equal { name="AA", rate=0, next=["DD","II","BB"] }
-            , test "example" <| \_ -> example1 |> part2 |> Expect.equal 1707
-            , skip <| test "input" <| \_ -> input |> part2 |> Expect.equal 0
-            -- (2496,"23:0->MB ; 21:1->IV ; 20:0->AQ ; 18:1->QR ; 14:0->TL ; 12:1->QB ; 11:0->LG ; 8:1->XK ; 7:0->WV ; 5:1->DC ; 3:0->OF ; 1:1->SB")
-            ]
-        ]
 
+port jsonConsole : Value -> Cmd msg
 
 part2 input =
     let
@@ -57,6 +52,16 @@ part2 input =
     in
     best.value
 
-{-
-20*(30-2)+13*(30-5)+11*(30-9)+22*(30-17)+3*(30-21)+2*(30-24)
--}
+main : Program () number String
+main =
+    worker
+        { init =
+            \_ ->
+                let
+                    _ = part2 input
+                        |> Debug.log "found"
+                in
+                ( 1, [E.string "ahaha"] |> L.map jsonConsole |> Cmd.batch)
+        , subscriptions = \n -> Sub.none
+        , update = \m n -> ( n, jsonConsole (E.string "update") )
+        }
