@@ -6,7 +6,7 @@ import Expect
 import Fuzz
 import List.Extra
 import List.Extra as LE
-import Set
+import Set exposing (Set)
 import String.Extra
 import Test exposing (..)
 import Tuple
@@ -14,6 +14,7 @@ import String as S
 import List as L
 import Debug as D
 import Array exposing (Array)
+import Regex
 
 
 example1 = """paste
