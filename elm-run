@@ -3,11 +3,14 @@
 set -euo pipefail
 
 src=${1?}
+shift
+
 module=$(basename "$src" .elm)
-output=${module}.js
+output=./elm-stuff/${module}.js
 
-npx elm make --output="${module}.js" "$src"
+npx elm make ${ELM_ARGS:-} --output="$output" "$src"
 
-echo 'this.Elm.'${module}'.init(JSON.stringify(process.argv[2])).ports.jsonConsole.subscribe(console.log);' >> "$output"
-
-node "$output"
+node -e "(w=>console.warn=(a,...b)=>/^Compiled in DEV/.test(a)||w(a,...b))(console.warn);
+         require('${output}').Elm.${module}
+           .init({flags:process.argv.slice(2)})
+           .ports.jsonConsole.subscribe(console.log)" "$@"

@@ -1,4 +1,19 @@
-module Day18Input exposing (input)
+module Day18Input exposing (..)
+
+example1 =
+    """2,2,2
+1,2,2
+3,2,2
+2,1,2
+2,3,2
+2,2,1
+2,2,3
+2,2,4
+2,2,6
+1,2,5
+3,2,5
+2,1,5
+2,3,5"""
 
 input = """18,9,5
 8,4,14
