@@ -59,11 +59,14 @@ makeOptions blueprint storage team =
       , 0
       )
     ]
-        |> L.filter (\( st, tm, _ ) -> isOptionValid st tm)
+        |> L.filter (\( st, tm, _ ) -> isOptionValid blueprint st tm)
 
 
-isOptionValid { oreCount, clayCount, obsidianCount } _ =
+isOptionValid blueprint { oreCount, clayCount, obsidianCount } { oreRobotCount, clayRobotCount, obsidianRobotCount } =
     oreCount >= 0 && clayCount >= 0 && obsidianCount >= 0
+    && (oreRobotCount <= blueprint.oreOreCost || oreRobotCount <= blueprint.clayOreCost || oreRobotCount <= blueprint.obsidianOreCost || oreRobotCount <= blueprint.geodeOreCost)
+    && (clayRobotCount <= blueprint.obsidianClayCost)
+    && (obsidianRobotCount <= blueprint.geodeObsidianCost)
 
 
 oneStep : Blueprint -> Int -> ( Storage, Team, Int ) -> List ( Storage, Team, Int )
