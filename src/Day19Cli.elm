@@ -50,17 +50,14 @@ update msg state =
     case msg of
         Start ->
             let
-                blueprints = parse input |> L.take 3
-
-                maxGeodes =
-                    blueprints
-                    |> L.indexedMap (\i blueprint -> (i+1, findMaxGeodes blueprint))
+                result1 = part1 input
+                result2 = part2 input
             in
             ( state
-            , consoleLog "{0}: {1} -> {2}"
+            , consoleLog "{0}: part1={1} part2={2}"
               [ state.bpidx|>D.toString
-              , maxGeodes|>D.toString
-              , maxGeodes|>L.map (\(x,y)->y)|>L.product|>D.toString
+              , result1|>D.toString
+              , result2|>D.toString
               ]
             )
 
@@ -72,10 +69,8 @@ main =
             \argv ->
                 let
                     _ = argv
-                    bpidx =
-                        L.head argv |> Maybe.andThen String.toInt |> Maybe.withDefault 0
                 in
-                ( { emptyState | bpidx = bpidx |> Debug.log "bpidx" }
+                ( emptyState
                 , start
                 )
         , subscriptions = \n -> Sub.none
