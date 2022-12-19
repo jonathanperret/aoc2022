@@ -12,5 +12,5 @@ npx elm make ${ELM_ARGS:-} --output="$output" "$src"
 
 node -e "(w=>console.warn=(a,...b)=>/^Compiled in DEV/.test(a)||w(a,...b))(console.warn);
          require('${output}').Elm.${module}
-           .init({flags:process.argv.slice(2)})
+           .init({flags:process.argv.slice(1)})
            .ports.jsonConsole.subscribe(console.log)" "$@"
