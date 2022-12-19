@@ -50,7 +50,7 @@ update msg state =
     case msg of
         Start ->
             let
-                blueprints = parse input
+                blueprints = parse input |> L.take 3
 
                 maxGeodes =
                     blueprints
@@ -60,21 +60,9 @@ update msg state =
             , consoleLog "{0}: {1} -> {2}"
               [ state.bpidx|>D.toString
               , maxGeodes|>D.toString
-              , maxGeodes|>L.map (\(x,y)->x*y)|>L.sum|>D.toString
+              , maxGeodes|>L.map (\(x,y)->y)|>L.product|>D.toString
               ]
             )
---            let
---                (result, finalCache) = bestGeodes blueprint1
---                    { oreRobotCount=1, clayRobotCount=0, obsidianRobotCount=0 }
---                    { oreCount=0, clayCount=0, obsidianCount=0 }
---                    state.minutes
---                    emptyCache
---            in
---            ( state
---            , consoleLog "done: {0} cacheSize: {1}" [result|>S.fromInt, 
---                finalCache|>Array.toList|>L.map Dict.size|>L.map S.fromInt|>S.join " "
---            ]
---            )
 
 
 main : Program (List String) State Msg

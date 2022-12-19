@@ -156,24 +156,22 @@ findMaxGeodes blueprint =
                 )
               ]
 
-        lastMinute = 1
-
         finalStates =
-            L.range lastMinute 24
+            L.range 1 32
             |> L.reverse
             |> L.foldl (\minute ss ->
                 let
                     newStates = stepAll blueprint minute ss
                     _ = newStates
-                        |> L.map (\(_,_,x)->x) |> LE.unique
+                        |> L.map (\(_,_,x)->x) |> Set.fromList |> Set.toList
                         |> D.log ((D.toString minute) ++ " " ++ (L.length newStates|>D.toString))
 
                     bestNewStates =
                         newStates
                         |> L.sortBy (\(st,te,ge) ->
-                            100000*ge + te.obsidianRobotCount * 100 + te.clayRobotCount * 10 + te.oreRobotCount
+                            100000*ge + te.obsidianRobotCount * 1000 + te.clayRobotCount * 100 + te.oreRobotCount
                         )
-                        |> L.drop (L.length newStates - 10000)
+                        |> L.drop (L.length newStates - 1000)
                 in
                 bestNewStates
             )
