@@ -47,11 +47,11 @@ suite =
                 [(0,1),(1,2),(4,-2),(2,-3),(5,0),(3,3),(6,4)] |> moveOne 4 |> Expect.equal
                 [(4,-2),(0,1),(1,2),(2,-3),(5,0),(3,3),(6,4)]
             , test "example" <| \_ -> example1 |> part1 |> Expect.equal 3
-            , test "input" <| \_ -> input |> part1 |> Expect.equal 0
+            , test "input" <| \_ -> input |> part1 |> Expect.equal 988
             ]
-        , skip <| describe "part 2"
-            [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 0
-            , skip <| test "input" <| \_ -> input |> part2 |> Expect.equal 0
+        , describe "part 2"
+            [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 1623178306
+            , test "input" <| \_ -> input |> part2 |> Expect.equal 0
             ]
         ]
 
@@ -96,8 +96,32 @@ part1 input =
         indexed = L.indexedMap (\i n -> (i, n)) numbers
             -- |>D.log "indexed"
 
-        mixedList = L.range 0 (L.length numbers - 1)
-            |> L.foldl (\i l -> moveOne i l)
+        mixedList = mix indexed
+
+        coordinates = [1000,2000,3000]
+            |> L.map (\i -> nthAfter0 i mixedList)
+
+    in
+    coordinates |> L.sum
+
+mix indexed =
+    L.range 0 (L.length indexed - 1)
+        |> L.foldl (\i l -> moveOne i l)
+        indexed
+
+part2 input =
+    let
+        numbers =
+            input
+            |> S.lines
+            |> L.filterMap S.toInt
+            |> L.map ((*) 811589153)
+
+        indexed = L.indexedMap (\i n -> (i, n)) numbers
+            -- |>D.log "indexed"
+
+        mixedList = L.range 0 9
+            |> L.foldl (\_ l -> mix l)
             indexed
 
         coordinates = [1000,2000,3000]
@@ -106,5 +130,3 @@ part1 input =
     in
     coordinates |> L.sum
 
-part2: String -> Int
-part2 input = 0
