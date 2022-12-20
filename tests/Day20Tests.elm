@@ -1,24 +1,25 @@
 module Day20Tests exposing (..)
 
 import AocUtil exposing (..)
+import Array exposing (Array)
 import Day20Input exposing (input)
+import Debug as D
+import Dict exposing (Dict)
 import Expect
 import Fuzz
-import List.Extra
+import List as L
 import List.Extra as LE
+import Regex
 import Set exposing (Set)
-import Dict exposing (Dict)
+import String as S
 import String.Extra
+import String.Interpolate exposing (interpolate)
 import Test exposing (..)
 import Tuple
-import String as S
-import List as L
-import Debug as D
-import Array exposing (Array)
-import Regex
 
 
-example1 = """1
+example1 =
+    """1
 2
 -3
 3
@@ -31,102 +32,157 @@ suite : Test
 suite =
     describe "day 20"
         [ describe "part 1"
-            [ test "moveOne 0" <| \_ ->
-                [(0,1),(1,2),(2,-3),(3,3),(4,-2),(5,0),(6,4)] |> moveOne 0 |> Expect.equal
-                [(1,2),(0,1),(2,-3),(3,3),(4,-2),(5,0),(6,4)]
-            , test "moveOne 1" <| \_ ->
-                [(1,2),(0,1),(2,-3),(3,3),(4,-2),(5,0),(6,4)] |> moveOne 1 |> Expect.equal
-                [(0,1),(2,-3),(1,2),(3,3),(4,-2),(5,0),(6,4)]
-            , test "moveOne 2" <| \_ ->
-                [(0,1),(2,-3),(1,2),(3,3),(4,-2),(5,0),(6,4)] |> moveOne 2 |> Expect.equal
-                [(0,1),(1,2),(3,3),(4,-2),(2,-3),(5,0),(6,4)]
-            , test "moveOne 3" <| \_ ->
-                [(0,1),(1,2),(3,3),(4,-2),(2,-3),(5,0),(6,4)] |> moveOne 3 |> Expect.equal
-                [(0,1),(1,2),(4,-2),(2,-3),(5,0),(3,3),(6,4)]
-            , test "moveOne 4" <| \_ ->
-                [(0,1),(1,2),(4,-2),(2,-3),(5,0),(3,3),(6,4)] |> moveOne 4 |> Expect.equal
-                [(4,-2),(0,1),(1,2),(2,-3),(5,0),(3,3),(6,4)]
+            [ test "moveOne 0" <|
+                \_ ->
+                    [ 0, 1, 2, 3, 4, 5, 6 ]
+                        |> moveOne 0 (Value 1)
+                        |> zeroFirst
+                        |> Expect.equal
+                            [ 0, 2, 3, 4, 5, 6, 1 ]
+            , test "moveOne 1" <|
+                \_ ->
+                    [ 1, 0, 2, 3, 4, 5, 6 ]
+                        |> moveOne 1 (Value 2)
+                        |> zeroFirst
+                        |> Expect.equal
+                            [ 0, 2, 1, 3, 4, 5, 6 ]
+            , test "moveOne 2" <|
+                \_ ->
+                    [ 0, 2, 1, 3, 4, 5, 6 ]
+                        |> moveOne 2 (Value -3)
+                        |> zeroFirst
+                        |> Expect.equal
+                            [ 0, 1, 3, 4, 2, 5, 6 ]
+            , test "moveOne 3" <|
+                \_ ->
+                    [ 0, 1, 3, 4, 2, 5, 6 ]
+                        |> moveOne 3 (Value 3)
+                        |> zeroFirst
+                        |> Expect.equal
+                            [ 0, 1, 4, 2, 5, 3, 6 ]
+            , test "moveOne 4" <|
+                \_ ->
+                    [ 0, 1, 4, 2, 5, 3, 6 ]
+                        |> moveOne 4 (Value -2)
+                        |> zeroFirst
+                        |> Expect.equal
+                            [ 0, 1, 2, 5, 3, 6, 4 ]
             , test "example" <| \_ -> example1 |> part1 |> Expect.equal 3
             , test "input" <| \_ -> input |> part1 |> Expect.equal 988
             ]
         , describe "part 2"
             [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 1623178306
-            , test "input" <| \_ -> input |> part2 |> Expect.equal 0
+            , test "input" <| \_ -> input |> part2 |> Expect.equal 7768531372516
             ]
         ]
 
+
+type Value
+    = Value Int
+
+
+zeroFirst indices =
+    case LE.splitWhen (\i -> i == 0) indices of
+        Just ( left, right ) ->
+            right ++ left
+
+        _ ->
+            D.todo "no zero"
+
+
 insertAt index value list =
     let
-        (left, right) = LE.splitAt index list
+        ( left, right ) =
+            LE.splitAt index list
     in
     left ++ [ value ] ++ right
 
-moveOne initialIndex nums =
+
+moveOne : Int -> Value -> List Int -> List Int
+moveOne initialIndex (Value value) indexes =
     let
-        currentIndex = LE.findIndex (\(i, n) -> i == initialIndex) nums |> fromJust
-        value = LE.getAt currentIndex nums |> fromJust |> Tuple.second
+        ( left, right ) =
+            case LE.splitWhen (\i -> i == initialIndex) indexes of
+                Just ( l, _ :: r ) ->
+                    ( l, r )
 
-        newIndex = modBy (L.length nums - 1) (currentIndex + value + L.length nums - 1)
+                _ ->
+                    D.todo "oops"
 
-        _= (currentIndex, value, newIndex)
-            --|> D.log ((initialIndex|>D.toString) ++ " (currentIndex, value, newIndex)")
+        newIndex =
+            modBy (L.length indexes - 1) value
 
-        without = LE.removeAt currentIndex nums
-
-        final = insertAt newIndex (initialIndex, value) without
-        --_ = final |> L.map Tuple.second |> (D.log ("mixed " ++ D.toString initialIndex ++ "(" ++ D.toString value ++ ")"))
+        without =
+            right ++ left
     in
-    final
+    insertAt newIndex initialIndex without
 
-nthAfter0 delta indexed =
+
+mix : List Value -> List Int -> List Int
+mix values indices =
+    L.foldl
+        (\( i, v ) l -> moveOne i v l)
+        indices
+        (L.indexedMap (\i v -> ( i, v )) values)
+
+
+nthAfter0 : List Value -> Int -> List Int -> Value
+nthAfter0 original delta mixed =
     let
-        zeroIndex = LE.findIndex (\(i, n) -> n == 0) indexed |> fromJust
-        targetIndex = modBy (L.length indexed) (zeroIndex + delta)
-        (_, targetValue) = LE.getAt targetIndex indexed |> fromJust
+        initialZeroIndex =
+            LE.findIndex (\(Value x) -> x == 0) original |> fromJust
+
+        newZeroIndex =
+            LE.findIndex (\x -> x == initialZeroIndex) mixed |> fromJust
+
+        targetIndex =
+            modBy (L.length original) (newZeroIndex + delta)
+
     in
-    targetValue
+    LE.getAt (LE.getAt targetIndex mixed |> fromJust) original |> fromJust
+
+
+sumCoordinates values indices =
+    let
+        coordinates =
+            [ 1000, 2000, 3000 ]
+                |> L.map (\delta -> nthAfter0 values delta indices)
+    in
+    coordinates |> L.map (\(Value x) -> x) |> L.sum
+
 
 part1 input =
     let
-        numbers =
+        values =
             input
-            |> S.lines
-            |> L.filterMap S.toInt
+                |> S.lines
+                |> L.filterMap S.toInt
+                |> L.map Value
 
-        indexed = L.indexedMap (\i n -> (i, n)) numbers
-            -- |>D.log "indexed"
+        indices =
+            L.range 0 (L.length values - 1)
 
-        mixedList = mix indexed
-
-        coordinates = [1000,2000,3000]
-            |> L.map (\i -> nthAfter0 i mixedList)
-
+        mixedIndices =
+            mix values indices
+                |> D.log "mixed"
     in
-    coordinates |> L.sum
+    sumCoordinates values mixedIndices
 
-mix indexed =
-    L.range 0 (L.length indexed - 1)
-        |> L.foldl (\i l -> moveOne i l)
-        indexed
 
 part2 input =
     let
-        numbers =
+        values =
             input
-            |> S.lines
-            |> L.filterMap S.toInt
-            |> L.map ((*) 811589153)
+                |> S.lines
+                |> L.filterMap S.toInt
+                |> L.map ((*) 811589153)
+                |> L.map Value
 
-        indexed = L.indexedMap (\i n -> (i, n)) numbers
-            -- |>D.log "indexed"
+        indices =
+            L.range 0 (L.length values - 1)
 
-        mixedList = L.range 0 9
-            |> L.foldl (\_ l -> mix l)
-            indexed
-
-        coordinates = [1000,2000,3000]
-            |> L.map (\i -> nthAfter0 i mixedList)
-
+        mixedIndices =
+            L.range 0 9
+                |> L.foldl (\_ -> mix values) indices
     in
-    coordinates |> L.sum
-
+    sumCoordinates values mixedIndices
