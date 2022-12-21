@@ -41,11 +41,11 @@ suite =
     describe "day 21"
         [ describe "part 1"
             [ test "example" <| \_ -> example1 |> part1 |> Integer.toString |> Expect.equal "152"
-            , test "input" <| \_ -> input |> part1 |> Integer.toString |> Expect.equal "0"
+            , test "input" <| \_ -> input |> part1 |> Integer.toString |> Expect.equal "82225382988628"
             ]
-        , skip <| describe "part 2"
-            [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 0
-            , skip <| test "input" <| \_ -> input |> part2 |> Expect.equal 0
+        , describe "part 2"
+            [ test "example" <| \_ -> example1 |> part2 |> Integer.toString |> Expect.equal "301"
+            , test "input" <| \_ -> input |> part2 |> Integer.toString |> Expect.equal "3429411069028"
             ]
         ]
 
@@ -101,6 +101,87 @@ eval monkeys name =
             _ -> D.todo ("division by zero at " ++ name)
 
 
+evalNonHuman: Dict String Monkey -> String -> Maybe Integer
+evalNonHuman monkeys name =
+    if name == "humn" then
+        Nothing
+    else
+    let
+        targetMonkey = case Dict.get name monkeys of
+            Just m -> m
+            _ -> D.todo ("unknown monkey" ++ name)
+
+        result = case targetMonkey.op of
+            Literal n -> Just n
+            Add arg1 arg2 -> Maybe.map2 Integer.add (evalNonHuman monkeys arg1) (evalNonHuman monkeys arg2)
+            Sub arg1 arg2 -> Maybe.map2 Integer.sub (evalNonHuman monkeys arg1) (evalNonHuman monkeys arg2)
+            Mul arg1 arg2 -> Maybe.map2 Integer.mul (evalNonHuman monkeys arg1) (evalNonHuman monkeys arg2)
+            Div arg1 arg2 ->
+                let
+                    val1 = (evalNonHuman monkeys arg1)
+                    val2 = (evalNonHuman monkeys arg2)
+                in
+                    case Maybe.map2 Integer.div val1 val2 of
+                        Just x -> x
+                        _ -> Nothing
+                         -- D.todo (interpolate "division by zero at {0}: {1} / {2}" [ name, D.toString <| Maybe.map Integer.toString val1, D.toString <| Maybe.map Integer.toString val2 ])
+    in
+    result |> D.log ("eval "++name)
+
+
+solveTarget: Dict String Monkey -> String -> Integer -> Integer
+solveTarget monkeys name target =
+    if name == "humn" then
+        target
+    else
+    let
+        targetMonkey = case Dict.get name monkeys of
+            Just m -> m
+            _ -> D.todo ("unknown monkey" ++ name)
+
+        result = case targetMonkey.op of
+            Literal _ -> D.todo "can't solve literal"
+            Add arg1 arg2 ->
+                case (evalNonHuman monkeys arg1, evalNonHuman monkeys arg2) of
+                    (Nothing, Just val2) -> solveTarget monkeys arg1 (Integer.sub target val2)
+                    (Just val1, Nothing) -> solveTarget monkeys arg2 (Integer.sub target val1)
+                    _ -> D.todo "one of the branches needs to have a human"
+            Sub arg1 arg2 ->
+                case (evalNonHuman monkeys arg1, evalNonHuman monkeys arg2) of
+                    (Nothing, Just val2) -> solveTarget monkeys arg1 (Integer.add target val2)
+                    (Just val1, Nothing) -> solveTarget monkeys arg2 (Integer.sub val1 target)
+                    _ -> D.todo "one of the branches needs to have a human"
+            Mul arg1 arg2 ->
+                case (evalNonHuman monkeys arg1, evalNonHuman monkeys arg2) of
+                    (Nothing, Just val2) -> solveTarget monkeys arg1 (Integer.div target val2 |> fromJust)
+                    (Just val1, Nothing) -> solveTarget monkeys arg2 (Integer.div target val1 |> fromJust)
+                    _ -> D.todo "one of the branches needs to have a human"
+            Div arg1 arg2 ->
+                case (evalNonHuman monkeys arg1, evalNonHuman monkeys arg2) of
+                    (Nothing, Just val2) -> solveTarget monkeys arg1 (Integer.mul target val2)
+                    (Just val1, Nothing) -> solveTarget monkeys arg2 (Integer.div val1 target |> fromJust)
+                    _ -> D.todo "one of the branches needs to have a human"
+
+    in
+    result
+
+solve: Dict String Monkey -> String -> Integer
+solve monkeys name =
+    let
+        targetMonkey = case Dict.get name monkeys of
+            Just m -> m
+            _ -> D.todo ("unknown monkey" ++ name)
+
+        result = case targetMonkey.op of
+            Add arg1 arg2 ->
+                case (evalNonHuman monkeys arg1, evalNonHuman monkeys arg2) of
+                    (Nothing, Just val2) -> solveTarget monkeys arg1 val2
+                    (Just val1, Nothing) -> solveTarget monkeys arg2 val1
+                    _ -> D.todo "one of the branches needs to have a human"
+            _ -> D.todo "can't solve this"
+    in
+    result
+
 part1 input =
     let
         monkeys =
@@ -109,4 +190,11 @@ part1 input =
     in
     eval monkeys "root"
 
-part2 input = 0
+part2 input =
+    let
+        monkeys =
+            input
+            |> parse
+    in
+    solve monkeys "root"
+
