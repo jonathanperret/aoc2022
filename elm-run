@@ -8,7 +8,7 @@ shift
 module=$(basename "$src" .elm)
 output=./elm-stuff/${module}.js
 
-npx elm make ${ELM_ARGS:-} --output="$output" "$src"
+npx elm make ${ELM_ARGS:-} --output="$output" "$src" >&2
 
 node -e "(w=>console.warn=(a,...b)=>/^Compiled in DEV/.test(a)||w(a,...b))(console.warn);
          require('${output}').Elm.${module}
