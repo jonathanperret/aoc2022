@@ -25,10 +25,10 @@ suite =
         [ describe "part 1"
             [ test "example0" <| \_ -> example0 |> part1 |> Expect.equal 25
             , test "example1" <| \_ -> example1 |> part1 |> Expect.equal 110
-            , skip <| test "input" <| \_ -> input |> part1 |> Expect.equal 4181
+            , test "input" <| \_ -> input |> part1 |> Expect.equal 4181
             ]
         , describe "part 2"
-            [ only <|test "example1" <| \_ -> example1 |> part2 |> Expect.equal 20
-            , skip <| test "input" <| \_ -> input |> part2 |> Expect.equal 973
+            [ test "example1" <| \_ -> example1 |> part2 |> Expect.equal 20
+            , test "input" <| \_ -> input |> part2 |> Expect.equal 973
             ]
         ]

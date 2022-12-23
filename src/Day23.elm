@@ -104,54 +104,46 @@ proposals map round =
     |> Set.toList
     |> L.map (\pos -> (pos, proposal map round pos))
 
+areaSize = 10
+
+type alias AreaPos = (Int, Int)
+
+getArea: Pos -> AreaPos
+getArea (x, y) =
+    ( x // areaSize
+    , y // areaSize )
+
 applyRound: Map -> Int -> (Map, Int)
 applyRound map round =
     let
         props = proposals map round
             --|>D.log "proposals"
 
-        (tofrom, _, moveCount) =
+        conflicted =
             props
-            |> L.foldl (\(from, to) (dict, conflicts, cnt) ->
-                case Set.member to conflicts of
-                    True -> (Dict.insert from from dict, conflicts, cnt)
-                    False ->
-                        case Dict.get to dict of
-                            Nothing ->
-                                ( Dict.insert to from dict
-                                , conflicts
-                                , if to /= from then cnt+1 else cnt
-                                )
-                            Just from2 ->
-                                ( dict
-                                  |> Dict.remove to
-                                  |> Dict.insert from2 from2
-                                  |> Dict.insert from from
-                                , conflicts
-                                  |> Set.insert to
-                                , cnt-1
-                                )
-             ) (Dict.empty, Set.empty, 0)
-
-        newMap =
-            tofrom
-            |> Dict.keys
+            |> L.map Tuple.second
+            |> LE.frequencies
+            |> L.filterMap (\(to, n) -> if n > 1 then Just to else Nothing)
             |> Set.fromList
 
---        conflicted =
---            props
---            |> L.map Tuple.second
---            |> LE.frequencies
---            |> L.filterMap (\(to, n) -> if n > 1 then Just to else Nothing)
---            |> Set.fromList
---
---        uniqueProposals =
---            props
---            |> L.map (\(from, to) ->
---                if Set.member to conflicted then from else to)
---
---        newMap = uniqueProposals
---            |> Set.fromList
+        (newMap, active) =
+            props
+            |> L.foldl (\(from, to) (result, act) ->
+                if to == from || Set.member to conflicted then
+                    ( Set.insert from result, act )
+                else
+                    ( Set.insert to result
+                    , act
+                      |> Set.insert from
+                      |> Set.insert to
+                    )
+            ) (Set.empty, Set.empty)
+
+        --_ = "newmap" |>D.log (renderMap newMap)
+        --_ = "active" |>D.log (renderMap active)
+
+
+        moveCount = Set.size active // 2
 
 
 --        _ = if Set.size map /= Set.size newMap then
