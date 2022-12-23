@@ -15,18 +15,32 @@ import List as L
 import Debug as D
 import Array exposing (Array)
 import Regex
+import String.Interpolate exposing (interpolate)
 
 
-example1 = """paste
-here"""
+example0 = """.....
+..##.
+..#..
+.....
+..##.
+....."""
+
+example1 = """....#..
+..###.#
+#...#.#
+.#...##
+#.###..
+##.#.##
+.#..#.."""
 
 
 suite : Test
 suite =
     describe "day 23"
         [ describe "part 1"
-            [ test "example" <| \_ -> example1 |> part1 |> Expect.equal 0
-            , skip <| test "input" <| \_ -> input |> part1 |> Expect.equal 0
+            [ skip <| test "example0" <| \_ -> example0 |> part1 |> Expect.equal 0
+            , test "example1" <| \_ -> example1 |> part1 |> Expect.equal 110
+            , test "input" <| \_ -> input |> part1 |> Expect.equal 4181
             ]
         , skip <| describe "part 2"
             [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 0
@@ -34,14 +48,192 @@ suite =
             ]
         ]
 
+type Dir
+    = North
+    | South
+    | East
+    | West
+
+type alias Pos = (Int, Int)
+
+type alias Map = Set Pos
+
+dirVec dir = case dir of
+    North -> (0, -1)
+    South -> (0, 1)
+    East -> (1, 0)
+    West -> (-1, 0)
+
+posAdd (x1, y1) (x2, y2) =
+    (x1 + x2, y1 + y2)
+
+neighbors (x, y) =
+    [ (x, y-1)   -- N
+    , (x+1, y-1) -- NE
+    , (x+1, y)   -- E
+    , (x+1, y+1) -- SE
+    , (x, y+1)   -- S
+    , (x-1, y+1) -- SW
+    , (x-1, y)   -- W
+    , (x-1, y-1) -- NW
+    ]
+
+existingNeighbors map (x, y) =
+    neighbors (x, y)
+    |> L.map (\p -> Set.member p map)
+
+
+parse input =
+    input
+    |> S.lines
+    |> L.indexedMap (\y line ->
+        line
+        |> S.toList
+        |> L.indexedMap (\x c -> case c of
+            '#' -> Just (x, y)
+            _ -> Nothing
+        ))
+    |> L.concat
+    |> L.filterMap identity
+    |> Set.fromList
+
+rotateLeft n list =
+    let
+        n2 = modBy (L.length list) n
+        (left, right) = LE.splitAt n2 list
+    in
+    right ++ left
+
+proposal: Map -> Int -> Pos -> Pos
+proposal map round pos =
+    let
+        nbs = existingNeighbors map pos
+        validDirections =
+            case nbs of
+                [False, False, False, False, False, False, False, False] -> [Nothing, Nothing, Nothing, Nothing]
+                [n, ne, e, se, s, sw, w, nw] ->
+                    [ if not (n || ne || nw) then Just North else Nothing
+                    , if not (s || se || sw) then Just South else Nothing
+                    , if not (w || nw || sw) then Just West else Nothing
+                    , if not (e || ne || se) then Just East else Nothing
+                    ]
+                _ -> D.todo "bad neighbors"
+        rotatedDirections = rotateLeft round validDirections
+        selectedDirection = rotatedDirections |> L.filterMap identity |> L.head
+        proposedLocation = case selectedDirection of
+            Just dir -> posAdd pos (dirVec dir)
+            _ -> pos
+        _ = (pos, (validDirections, rotatedDirections, selectedDirection), proposedLocation)
+        --|> D.log "pos,valid,rotated,selected,proposedLocation"
+    in
+    proposedLocation
+
+
+proposals: Map -> Int -> List (Pos, Pos)
+proposals map round =
+    map
+    |> Set.toList
+    |> L.map (\pos -> (pos, proposal map round pos))
+
+applyRound: Map -> Int -> Map
+applyRound map round =
+    let
+        props = proposals map round
+            --|>D.log "proposals"
+
+        uniqueProposals =
+            props
+            |> LE.gatherEqualsBy Tuple.second
+            |> L.concatMap (\((from, to), others) ->
+                    case others of
+                        [] -> [to]
+                        _ -> from :: L.map Tuple.first others
+                )
+
+        newMap = uniqueProposals
+            |> Set.fromList
+
+        _ = if Set.size map /= Set.size newMap then
+                D.todo (interpolate "oops, map size changed from {0} to {1}" [Set.size map|>S.fromInt, Set.size newMap|>S.fromInt])
+            else
+                ()
+    in
+    newMap
+
+renderMap: Map -> a -> a
+renderMap map tag =
+    let
+        list = map |> Set.toList
+        minX = list |> L.map Tuple.first |> L.minimum |> fromJust
+        maxX = list |> L.map Tuple.first |> L.maximum |> fromJust
+        minY = list |> L.map Tuple.second |> L.minimum |> fromJust
+        maxY = list |> L.map Tuple.second |> L.maximum |> fromJust
+
+        str=  L.range (if minY>0 then 0 else minY) (maxY + 1)
+            |> L.map (\y ->
+                L.range (if minX>0 then 0 else minX) (maxX + 1)
+                |> L.map (\x ->
+                    if Set.member (x, y) map then '#' else '.'
+                )
+                |> S.fromList
+            )
+            |> S.join "\n"
+
+    in
+    tag |> D.log ("\n" ++ str ++ "\n\n")
+
+
+allRounds: Map -> Int -> Int -> Map
+allRounds map limit round =
+    if round >= limit then map
+    else
+    let
+        newMap = applyRound map round
+
+        --_ = round |> renderMap newMap
+    in
+    if newMap /= map then
+        allRounds newMap limit (round + 1)
+    else
+        map
+
+
+countGround: Map -> Int
+countGround map =
+    let
+        list = map |> Set.toList
+        minX = list |> L.map Tuple.first |> L.minimum |> fromJust
+        maxX = list |> L.map Tuple.first |> L.maximum |> fromJust
+        minY = list |> L.map Tuple.second |> L.minimum |> fromJust
+        maxY = list |> L.map Tuple.second |> L.maximum |> fromJust
+
+        groundTiles = L.range minY maxY
+            |> L.concatMap (\y ->
+                L.range minX maxX
+                |> L.map (\x ->
+                    if Set.member (x, y) map then Nothing else Just (x,y)
+                )
+            )
+            |> L.filterMap identity
+
+    in
+    groundTiles |> L.length
 
 part1 input =
     let
-        data =
+        map =
             input
-            |> S.lines
+            |> parse
+            --|> D.log "parsed"
+
+        _ = "initial" |> renderMap map
+
+        finalMap = allRounds map 10 0
+
+        _ = renderMap finalMap
+
     in
-    0
+    countGround finalMap
 
 part2: String -> Int
 part2 input = 0
