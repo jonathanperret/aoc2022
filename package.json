@@ -9,6 +9,7 @@
     "elm-tooling": "^1.10.0"
   },
   "dependencies": {
+    "@elm-tooling/elm-language-server": "^2.6.0",
     "elm-test": "^0.19.1-revision10"
   }
 }
