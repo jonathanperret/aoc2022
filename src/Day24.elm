@@ -17,7 +17,7 @@ import String as S
 import String.Extra
 import String.Interpolate exposing (interpolate)
 import Test exposing (..)
-import Tuple
+import Tuple exposing (first)
 
 
 type alias Pos =
@@ -249,12 +249,20 @@ type alias State =
     ( Pos, Int )
 
 
-isStart map ( x, y ) =
-    x == 0 && y == -1
+startPos _ =
+    ( 0, -1 )
 
 
-isGoal map ( x, y ) =
-    x == map.width - 1 && y == map.height
+goalPos map =
+    ( map.width - 1, map.height )
+
+
+isStart map pos =
+    pos == startPos map
+
+
+isGoal map pos =
+    pos == goalPos map
 
 
 isInMap map ( x, y ) =
@@ -270,8 +278,8 @@ nextStates map ( pos, time ) =
         |> L.map (\newPos -> ( newPos, modBy map.cycleTime (time + 1) ))
 
 
-solve : Map -> State -> Maybe Int
-solve map start =
+solve : Map -> State -> Pos -> Maybe Int
+solve map start goal =
     let
         visited0 =
             [ ( start, 0 ) ] |> Dict.fromList
@@ -284,32 +292,26 @@ solve map start =
                 --_ = frontier |> D.log "frontier"
                 frontier2 =
                     frontier
-                        |> List.concatMap
-                            (\state ->
-                                let
-                                    ns =
-                                        nextStates map state
-                                            |> List.filter (\st -> Dict.member st visited |> not)
-                                in
-                                ns
-                            )
+                        |> List.concatMap (nextStates map)
                         |> Set.fromList
+                        |> Set.filter (\state -> Dict.member state visited |> not)
                         |> Set.toList
 
                 --|> D.log "frontier2"
                 _ =
-                    ("after minute " ++ S.fromInt (time + 1)) |> D.log (renderMap map (time + 1) (frontier2 |> L.map Tuple.first))
+                    \_ ->
+                        ("after minute " ++ S.fromInt time) |> D.log (renderMap map time (frontier2 |> L.map Tuple.first))
 
                 visited2 =
                     frontier2
-                        |> List.foldl (\st v -> Dict.insert st (time + 1) v) visited
+                        |> List.foldl (\st v -> Dict.insert st time v) visited
 
                 goalCost =
                     frontier2
                         |> LE.findMap
                             (\( pos, _ ) ->
-                                if isGoal map pos then
-                                    Just (time + 1)
+                                if pos == goal then
+                                    Just time
 
                                 else
                                     Nothing
@@ -326,7 +328,22 @@ solve map start =
                     else
                         step (time + 1) { visited = visited2, frontier = frontier2 }
     in
-    step 0 { visited = visited0, frontier = frontier0 }
+    step 1 { visited = visited0, frontier = frontier0 }
+
+
+solveTrip map time waypoints =
+    case waypoints of
+        from :: to :: rest ->
+            solve map ( from, time ) to
+                |> D.log (interpolate "{0} -> {1}" [ D.toString from, D.toString to ])
+                |> Maybe.andThen
+                    (\leg ->
+                        solveTrip map (time + leg) (to :: rest)
+                            |> Maybe.map ((+) leg)
+                    )
+
+        _ ->
+            Just 0
 
 
 part1 input =
@@ -334,23 +351,14 @@ part1 input =
         map =
             input
                 |> parse
-
-        initialPos =
-            ( 0, -1 )
-
-        initialState =
-            ( initialPos, 0 )
-
-        --    _ =
-        --        L.range 0 100
-        --            |> LE.stoppableFoldl
-        --                (\_ state ->
-        --                    case nextStates map state |> L.reverse of
-        --                        [] ->
-        --                            LE.Stop state
-        --                        ( pos, time ) :: _ ->
-        --                            LE.Continue (( pos, time ) |> D.log (renderMap map time pos))
-        --                )
-        --                initialState
     in
-    solve map initialState |> fromJust
+    solveTrip map 0 [ startPos map, goalPos map ]
+
+
+part2 input =
+    let
+        map =
+            input
+                |> parse
+    in
+    solveTrip map 0 [ startPos map, goalPos map, startPos map, goalPos map ]

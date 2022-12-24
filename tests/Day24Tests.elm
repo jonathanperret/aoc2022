@@ -42,8 +42,13 @@ suite : Test
 suite =
     describe "day 24"
         [ describe "part 1"
-            [ skip <| test "example1" <| \_ -> example1 |> part1 |> Expect.equal 10
-            , test "example2" <| \_ -> example2 |> part1 |> Expect.equal 18
-            , test "input" <| \_ -> input |> part1 |> Expect.equal 0
+            [ test "example1" <| \_ -> example1 |> part1 |> Expect.equal (Just 10)
+            , test "example2" <| \_ -> example2 |> part1 |> Expect.equal (Just 18)
+            , test "input" <| \_ -> input |> part1 |> Expect.equal (Just 332)
+            ]
+        , describe "part 2"
+            [ test "example1" <| \_ -> example1 |> part2 |> Expect.equal (Just 30)
+            , test "example2" <| \_ -> example2 |> part2 |> Expect.equal (Just 54)
+            , test "input" <| \_ -> input |> part2 |> Expect.equal (Just 942)
             ]
         ]
