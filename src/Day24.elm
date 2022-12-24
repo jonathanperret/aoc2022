@@ -1,23 +1,14 @@
 module Day24 exposing (..)
 
 import AocUtil exposing (..)
-import Arithmetic
-import Array exposing (Array, initialize)
 import Day23 exposing (Pos)
 import Debug as D
-import Dict exposing (Dict, intersect)
-import Expect
-import Fuzz
-import Html exposing (blockquote)
 import List as L
-import List.Extra as LE exposing (foldl1)
-import Regex
+import List.Extra as LE
 import Set exposing (Set)
 import String as S
-import String.Extra
 import String.Interpolate exposing (interpolate)
 import Test exposing (..)
-import Tuple exposing (first)
 
 
 type alias Pos =
@@ -28,22 +19,27 @@ type alias Dir =
     Char
 
 
+north : Dir
 north =
     '^'
 
 
+east : Dir
 east =
     '>'
 
 
+south : Dir
 south =
     'v'
 
 
+west : Dir
 west =
     '<'
 
 
+dirs : List Dir
 dirs =
     [ north
     , east
@@ -56,6 +52,14 @@ type alias Blizzard =
     ( Pos, Dir )
 
 
+type alias Map =
+    { width : Int
+    , height : Int
+    , blizzards : Set Blizzard
+    }
+
+
+dirVec : Dir -> Pos
 dirVec dir =
     case dir of
         '^' ->
@@ -78,18 +82,22 @@ dirVec dir =
             D.todo "bad dir"
 
 
+posAdd : Pos -> Pos -> Pos
 posAdd ( x1, y1 ) ( x2, y2 ) =
     ( x1 + x2, y1 + y2 )
 
 
+posMul : Int -> Pos -> Pos
 posMul n ( x, y ) =
     ( n * x, n * y )
 
 
-posMod map ( x, y ) =
+posWrap : Map -> Pos -> Pos
+posWrap map ( x, y ) =
     ( modBy map.width x, modBy map.height y )
 
 
+neighbors : Pos -> List Pos
 neighbors ( x, y ) =
     [ ( x, y - 1 ) -- N
     , ( x + 1, y ) -- E
@@ -98,27 +106,12 @@ neighbors ( x, y ) =
     ]
 
 
-blizzardAt map time ( pos, dir ) =
-    posMod map (posAdd pos (posMul time (dirVec dir)))
-
-
-blizzardOccupies map time pos blizzard =
-    blizzardAt map time blizzard == pos
-
-
-type alias Map =
-    { width : Int
-    , height : Int
-    , cycleTime : Int
-    , blizzards : Set Blizzard
-    }
-
-
 potentialBlizzardAt : Map -> Int -> Pos -> Dir -> Blizzard
 potentialBlizzardAt map time pos dir =
-    ( posMod map (posAdd pos (posMul -time (dirVec dir))), dir )
+    ( posWrap map (posAdd pos (posMul -time (dirVec dir))), dir )
 
 
+posFreeAt : Map -> Int -> Pos -> Bool
 posFreeAt map time pos =
     isStart map pos
         || isGoal map pos
@@ -134,39 +127,24 @@ posFreeAt map time pos =
            )
 
 
+parseLine : Int -> String -> Maybe (List Blizzard)
 parseLine row line =
     let
         chars =
             S.toList line
     in
-    case LE.getAt 2 chars of
-        Just '#' ->
+    case chars of
+        _ :: _ :: '#' :: _ ->
             Nothing
 
         _ ->
             chars
                 |> L.indexedMap
-                    (\col char ->
-                        case char of
-                            '>' ->
-                                Just ( ( col - 1, row - 1 ), east )
-
-                            '<' ->
-                                Just ( ( col - 1, row - 1 ), west )
-
-                            '^' ->
-                                Just ( ( col - 1, row - 1 ), north )
-
-                            'v' ->
-                                Just ( ( col - 1, row - 1 ), south )
-
-                            _ ->
-                                Nothing
-                    )
-                |> L.filterMap identity
+                    (\col char -> ( ( col - 1, row - 1 ), char ))
                 |> Just
 
 
+parse : String -> Map
 parse input =
     let
         lines =
@@ -195,12 +173,11 @@ parse input =
     in
     { width = width
     , height = height
-    , cycleTime = Arithmetic.lcm width height
     , blizzards = blizzards
     }
 
 
-renderMap : Map -> Int -> List Pos -> String
+renderMap : Map -> Int -> Set Pos -> String
 renderMap map time poss =
     L.range -1 map.height
         |> L.map
@@ -211,7 +188,7 @@ renderMap map time poss =
                             if x < 0 || x >= map.width || (y < 0 && x /= 0) || (y >= map.height && x /= (map.width - 1)) then
                                 '#'
 
-                            else if L.member ( x, y ) poss then
+                            else if Set.member ( x, y ) poss then
                                 if posFreeAt map time ( x, y ) then
                                     'E'
 
@@ -245,107 +222,89 @@ renderMap map time poss =
         |> (\s -> S.append s "\n")
 
 
-type alias State =
-    ( Pos, Int )
-
-
+startPos : Map -> Pos
 startPos _ =
     ( 0, -1 )
 
 
+goalPos : Map -> Pos
 goalPos map =
     ( map.width - 1, map.height )
 
 
+isStart : Map -> Pos -> Bool
 isStart map pos =
     pos == startPos map
 
 
+isGoal : Map -> Pos -> Bool
 isGoal map pos =
     pos == goalPos map
 
 
+isInMap : Map -> Pos -> Bool
 isInMap map ( x, y ) =
-    isStart map ( x, y )
-        || isGoal map ( x, y )
-        || (x >= 0 && x < map.width && y >= 0 && y < map.height)
+    x >= 0 && x < map.width && y >= 0 && y < map.height
 
 
-nextStates : Map -> State -> List State
-nextStates map ( pos, time ) =
+nextStates : Map -> Int -> Pos -> List Pos
+nextStates map time pos =
     (pos :: neighbors pos)
-        |> L.filter (posFreeAt map (time + 1))
-        |> L.map (\newPos -> ( newPos, modBy map.cycleTime (time + 1) ))
+        |> L.filter (posFreeAt map time)
+        |> L.map (\newPos -> newPos)
 
 
-solve : Map -> State -> Pos -> Maybe Int
-solve map start goal =
+solve : Map -> Int -> Pos -> Pos -> Maybe Int
+solve map time0 start goal =
     let
-        visited0 =
-            [ ( start, 0 ) ] |> Dict.fromList
-
-        frontier0 =
-            [ start ]
-
-        step time { visited, frontier } =
+        step time frontier =
             let
                 --_ = frontier |> D.log "frontier"
                 frontier2 =
                     frontier
-                        |> List.concatMap (nextStates map)
-                        |> Set.fromList
-                        |> Set.filter (\state -> Dict.member state visited |> not)
                         |> Set.toList
+                        |> List.concatMap (nextStates map time)
+                        |> Set.fromList
 
                 --|> D.log "frontier2"
                 _ =
                     \_ ->
-                        ("after minute " ++ S.fromInt time) |> D.log (renderMap map time (frontier2 |> L.map Tuple.first))
-
-                visited2 =
-                    frontier2
-                        |> List.foldl (\st v -> Dict.insert st time v) visited
+                        ("after minute " ++ S.fromInt time) |> D.log (renderMap map time frontier2)
 
                 goalCost =
-                    frontier2
-                        |> LE.findMap
-                            (\( pos, _ ) ->
-                                if pos == goal then
-                                    Just time
+                    if Set.member goal frontier2 then
+                        Just time
 
-                                else
-                                    Nothing
-                            )
+                    else
+                        Nothing
             in
             case goalCost of
                 Just _ ->
                     goalCost
 
                 Nothing ->
-                    if List.isEmpty frontier2 then
+                    if Set.isEmpty frontier2 then
                         Nothing
 
                     else
-                        step (time + 1) { visited = visited2, frontier = frontier2 }
+                        step (time + 1) frontier2
     in
-    step 1 { visited = visited0, frontier = frontier0 }
+    step (time0 + 1) (Set.singleton start)
 
 
+solveTrip : Map -> Int -> List Pos -> Maybe Int
 solveTrip map time waypoints =
     case waypoints of
         from :: to :: rest ->
-            solve map ( from, time ) to
-                |> D.log (interpolate "{0} -> {1}" [ D.toString from, D.toString to ])
-                |> Maybe.andThen
-                    (\leg ->
-                        solveTrip map (time + leg) (to :: rest)
-                            |> Maybe.map ((+) leg)
-                    )
+            solve map time from to
+                |> D.log (interpolate "{0} -> {1} at {2}" [ D.toString from, D.toString to, D.toString time ])
+                |> Maybe.andThen (\arrivalTime -> solveTrip map arrivalTime (to :: rest))
 
         _ ->
-            Just 0
+            Just time
 
 
+part1 : String -> Maybe Int
 part1 input =
     let
         map =
@@ -355,6 +314,7 @@ part1 input =
     solveTrip map 0 [ startPos map, goalPos map ]
 
 
+part2 : String -> Maybe Int
 part2 input =
     let
         map =
