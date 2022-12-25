@@ -1,7 +1,7 @@
 module Day24 exposing (..)
 
 import AocUtil exposing (..)
-import Day23 exposing (Pos)
+import Day23 exposing (Pos, dirVec)
 import Debug as D
 import List as L
 import List.Extra as LE
@@ -79,7 +79,7 @@ dirVec dir =
             ( -1, 0 )
 
         _ ->
-            D.todo "bad dir"
+            D.todo ("bad dir " ++ D.toString dir)
 
 
 posAdd : Pos -> Pos -> Pos
@@ -106,13 +106,13 @@ neighbors ( x, y ) =
     ]
 
 
-potentialBlizzardAt : Map -> Int -> Pos -> Dir -> Blizzard
-potentialBlizzardAt map time pos dir =
-    ( posWrap map (posAdd pos (posMul -time (dirVec dir))), dir )
+potentialBlizzardAt : Map -> Pos -> Dir -> Blizzard
+potentialBlizzardAt map pos dir =
+    ( pos, dir )
 
 
-posFreeAt : Map -> Int -> Pos -> Bool
-posFreeAt map time pos =
+posFreeAt : Map -> Pos -> Bool
+posFreeAt map pos =
     isStart map pos
         || isGoal map pos
         || (isInMap map pos
@@ -121,7 +121,7 @@ posFreeAt map time pos =
                         |> L.any
                             (\dir ->
                                 map.blizzards
-                                    |> Set.member (potentialBlizzardAt map time pos dir)
+                                    |> Set.member (potentialBlizzardAt map pos dir)
                             )
                     )
            )
@@ -140,7 +140,14 @@ parseLine row line =
         _ ->
             chars
                 |> L.indexedMap
-                    (\col char -> ( ( col - 1, row - 1 ), char ))
+                    (\col char ->
+                        if L.member char dirs then
+                            Just ( ( col - 1, row - 1 ), char )
+
+                        else
+                            Nothing
+                    )
+                |> L.filterMap identity
                 |> Just
 
 
@@ -177,8 +184,8 @@ parse input =
     }
 
 
-renderMap : Map -> Int -> Set Pos -> String
-renderMap map time poss =
+renderMap : Map -> Set Pos -> String
+renderMap map poss =
     L.range -1 map.height
         |> L.map
             (\y ->
@@ -189,7 +196,7 @@ renderMap map time poss =
                                 '#'
 
                             else if Set.member ( x, y ) poss then
-                                if posFreeAt map time ( x, y ) then
+                                if posFreeAt map ( x, y ) then
                                     'E'
 
                                 else
@@ -204,7 +211,7 @@ renderMap map time poss =
                             else
                                 case
                                     dirs
-                                        |> L.map (\dir -> potentialBlizzardAt map time ( x, y ) dir)
+                                        |> L.map (\dir -> potentialBlizzardAt map ( x, y ) dir)
                                         |> L.filter (\b -> Set.member b map.blizzards)
                                 of
                                     [] ->
@@ -247,29 +254,41 @@ isInMap map ( x, y ) =
     x >= 0 && x < map.width && y >= 0 && y < map.height
 
 
-nextStates : Map -> Int -> Pos -> List Pos
-nextStates map time pos =
+nextStates : Map -> Pos -> List Pos
+nextStates map pos =
     (pos :: neighbors pos)
-        |> L.filter (posFreeAt map time)
+        |> L.filter (posFreeAt map)
         |> L.map (\newPos -> newPos)
 
 
-solve : Map -> Int -> Pos -> Pos -> Maybe Int
-solve map time0 start goal =
+updateMap : Map -> Map
+updateMap map =
+    { map
+        | blizzards =
+            map.blizzards
+                |> Set.map (\( pos, dir ) -> ( posWrap map (posAdd pos (dirVec dir)), dir ))
+    }
+
+
+solve : Map -> Int -> Pos -> Pos -> Maybe ( Int, Map )
+solve map0 time0 start goal =
     let
-        step time frontier =
+        step map time frontier =
             let
+                map2 =
+                    updateMap map
+
                 --_ = frontier |> D.log "frontier"
                 frontier2 =
                     frontier
                         |> Set.toList
-                        |> List.concatMap (nextStates map time)
+                        |> List.concatMap (nextStates map2)
                         |> Set.fromList
 
                 --|> D.log "frontier2"
                 _ =
                     \_ ->
-                        ("after minute " ++ S.fromInt time) |> D.log (renderMap map time frontier2)
+                        ("after minute " ++ S.fromInt time) |> D.log (renderMap map2 frontier2)
 
                 goalCost =
                     if Set.member goal frontier2 then
@@ -279,17 +298,17 @@ solve map time0 start goal =
                         Nothing
             in
             case goalCost of
-                Just _ ->
-                    goalCost
+                Just c ->
+                    Just ( c, map2 )
 
                 Nothing ->
                     if Set.isEmpty frontier2 then
                         Nothing
 
                     else
-                        step (time + 1) frontier2
+                        step map2 (time + 1) frontier2
     in
-    step (time0 + 1) (Set.singleton start)
+    step map0 (time0 + 1) (Set.singleton start)
 
 
 solveTrip : Map -> Int -> List Pos -> Maybe Int
@@ -297,8 +316,12 @@ solveTrip map time waypoints =
     case waypoints of
         from :: to :: rest ->
             solve map time from to
-                |> D.log (interpolate "{0} -> {1} at {2}" [ D.toString from, D.toString to, D.toString time ])
-                |> Maybe.andThen (\arrivalTime -> solveTrip map arrivalTime (to :: rest))
+                |> Maybe.map
+                    (\( c, m ) ->
+                        D.log (interpolate "{0} -> {1} at {2}" [ D.toString from, D.toString to, D.toString time ]) c
+                            |> (\_ -> ( c, m ))
+                    )
+                |> Maybe.andThen (\( arrivalTime, map2 ) -> solveTrip map2 arrivalTime (to :: rest))
 
         _ ->
             Just time
