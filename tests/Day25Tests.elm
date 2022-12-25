@@ -1,47 +1,88 @@
 module Day25Tests exposing (..)
 
 import AocUtil exposing (..)
-import Day25Input exposing (input)
+import Array exposing (Array)
+import Day25 exposing (..)
+import Day25Input exposing (..)
+import Debug as D
+import Dict exposing (Dict)
 import Expect
 import Fuzz
-import List.Extra
+import List as L
 import List.Extra as LE
+import Regex
 import Set exposing (Set)
+import String as S
 import String.Extra
 import Test exposing (..)
 import Tuple
-import String as S
-import List as L
-import Debug as D
-import Array exposing (Array)
-import Regex
 
 
-example1 = """paste
-here"""
+example1 =
+    """1=-0-2
+12111
+2=0=
+21
+2=01
+111
+20012
+112
+1=-1=
+1-12
+12
+1=
+122"""
+
+
+example1output =
+    [ 1747
+    , 906
+    , 198
+    , 11
+    , 201
+    , 31
+    , 1257
+    , 32
+    , 353
+    , 107
+    , 7
+    , 3
+    , 37
+    ]
+
+
+example2 =
+    [ ( 1, "1" )
+    , ( 2, "2" )
+    , ( 3, "1=" )
+    , ( 4, "1-" )
+    , ( 5, "10" )
+    , ( 6, "11" )
+    , ( 7, "12" )
+    , ( 8, "2=" )
+    , ( 9, "2-" )
+    , ( 10, "20" )
+    , ( 15, "1=0" )
+    , ( 20, "1-0" )
+    , ( 2022, "1=11-2" )
+    , ( 12345, "1-0---0" )
+    , ( 314159265, "1121-1110-1=0" )
+    ]
 
 
 suite : Test
 suite =
     describe "day 25"
         [ describe "part 1"
-            [ test "example" <| \_ -> example1 |> part1 |> Expect.equal 0
-            , skip <| test "input" <| \_ -> input |> part1 |> Expect.equal 0
+            [ test "fromSnafu" <| \_ -> example1 |> S.lines |> L.filterMap fromSnafu |> Expect.equal example1output
+            , test "toSnafu" <| \_ -> example2 |> L.map Tuple.first |> L.map toSnafu |> Expect.equal (example2 |> L.map Tuple.second)
+            , test "example" <| \_ -> example1 |> part1 |> Expect.equal ( 4890, "2=-1=0" )
+            , test "fromSnafuBig" <| \_ -> "122-2=200-0111--=200" |> fromSnafu |> Expect.equal (Just 28127432121050)
+            , test "input" <| \_ -> input |> part1 |> Expect.equal ( 28127432121050, "122-2=200-0111--=200" )
             ]
-        , skip <| describe "part 2"
-            [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 0
-            , skip <| test "input" <| \_ -> input |> part2 |> Expect.equal 0
-            ]
+        , skip <|
+            describe "part 2"
+                [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 0
+                , skip <| test "input" <| \_ -> input |> part2 |> Expect.equal 0
+                ]
         ]
-
-
-part1 input =
-    let
-        data =
-            input
-            |> S.lines
-    in
-    0
-
-part2: String -> Int
-part2 input = 0
