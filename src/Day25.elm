@@ -7,7 +7,7 @@ import Dict exposing (Dict)
 import Expect
 import Fuzz
 import List as L
-import List.Extra as LE
+import List.Extra as LE exposing (unfoldr)
 import Regex
 import Set exposing (Set)
 import String as S
@@ -44,8 +44,11 @@ fromSnafu s =
         |> L.foldl
             (\digit ( result, power ) ->
                 ( Maybe.map2
-                    (\r val -> r + val * power
-                     --|> D.log (interpolate "{0}*{1}+{2}" [ S.fromInt r, S.fromInt val, S.fromInt power ])
+                    (\r val ->
+                        r
+                            + val
+                            * power
+                     --|> D.log (interpolate "{0}*{1}+{2}" [ S.fromInt power, S.fromInt val, S.fromInt r ])
                     )
                     result
                     (fromSnafuDigit digit)
@@ -56,64 +59,63 @@ fromSnafu s =
         |> (\( result, _ ) -> result)
 
 
-toSnafu n =
+divMod a b =
+    floor (toFloat a / toFloat b) |> (\quot -> ( quot, a - b * quot ))
+
+
+toSnafu : Int -> String
+toSnafu =
+    unfoldr
+        (\n ->
+            case n of
+                0 ->
+                    Nothing
+
+                _ ->
+                    let
+                        ( quot, rem ) =
+                            divMod (n + 2) 5
+                    in
+                    Just ( rem, quot )
+        )
+        >> LE.reverseMap (\d -> S.slice d (d + 1) "=-012")
+        >> S.concat
+        >> (\s ->
+                if S.isEmpty s then
+                    "0"
+
+                else
+                    s
+           )
+
+
+largestSafeSnafu : Int -> Int
+largestSafeSnafu max =
     let
-        snafuZero =
-            fromSnafu "====================" |> fromJust
+        check n =
+            let
+                roundTripped =
+                    toSnafu n |> fromSnafu |> fromJust
+            in
+            n == roundTripped
 
-        nFromZero =
-            n - snafuZero
-
-        powers =
-            L.range 0 20
-                |> L.foldl (\_ ( ps, p ) -> ( p :: ps, p * 5 )) ( [], 1 )
-                |> Tuple.first
-
-        takeFrom rest p res =
-            if rest >= p then
-                takeFrom (rest - p) p (res + 1)
+        bisect lastGood firstBad =
+            if firstBad - lastGood == 1 then
+                lastGood
 
             else
-                ( rest, res )
+                let
+                    candidate =
+                        lastGood
+                            + floor ((toFloat firstBad - toFloat lastGood) / 2)
+                in
+                if check candidate then
+                    bisect candidate firstBad
 
-        ( _, resultDigits ) =
-            powers
-                |> L.foldl
-                    (\p ( rest, digits ) ->
-                        let
-                            ( rest2, digit ) =
-                                takeFrom rest p 0
-                        in
-                        ( rest2, digit :: digits )
-                    )
-                    ( nFromZero, [] )
+                else
+                    bisect lastGood candidate
     in
-    resultDigits
-        |> L.reverse
-        |> L.drop 1
-        |> LE.dropWhile (\d -> d == 2)
-        |> L.map
-            (\d ->
-                case d of
-                    0 ->
-                        '='
-
-                    1 ->
-                        '-'
-
-                    2 ->
-                        '0'
-
-                    3 ->
-                        '1'
-
-                    4 ->
-                        '2'
-
-                    _ ->
-                        '!'
-            )
-        |> S.fromList
+    bisect 0 max
 
 
 part1 input =
@@ -125,8 +127,3 @@ part1 input =
                 |> L.sum
     in
     ( result, toSnafu result )
-
-
-part2 : String -> Int
-part2 input =
-    0

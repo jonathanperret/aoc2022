@@ -52,7 +52,8 @@ example1output =
 
 
 example2 =
-    [ ( 1, "1" )
+    [ ( 0, "0" )
+    , ( 1, "1" )
     , ( 2, "2" )
     , ( 3, "1=" )
     , ( 4, "1-" )
@@ -67,6 +68,8 @@ example2 =
     , ( 2022, "1=11-2" )
     , ( 12345, "1-0---0" )
     , ( 314159265, "1121-1110-1=0" )
+    , ( 100314159265, "1=121-21-1110-1=0" )
+    , ( -100314159265, "-2-=-1=-1---01-20" )
     ]
 
 
@@ -75,14 +78,18 @@ suite =
     describe "day 25"
         [ describe "part 1"
             [ test "fromSnafu" <| \_ -> example1 |> S.lines |> L.filterMap fromSnafu |> Expect.equal example1output
-            , test "toSnafu" <| \_ -> example2 |> L.map Tuple.first |> L.map toSnafu |> Expect.equal (example2 |> L.map Tuple.second)
+            , test "toSnafu" <|
+                \_ ->
+                    example2
+                        |> L.map
+                            (Tuple.mapFirst toSnafu
+                                >> Tuple.mapSecond (fromSnafu >> fromJust)
+                                >> (\( a, b ) -> ( b, a ))
+                            )
+                        |> Expect.equal example2
             , test "example" <| \_ -> example1 |> part1 |> Expect.equal ( 4890, "2=-1=0" )
             , test "fromSnafuBig" <| \_ -> "122-2=200-0111--=200" |> fromSnafu |> Expect.equal (Just 28127432121050)
             , test "input" <| \_ -> input |> part1 |> Expect.equal ( 28127432121050, "122-2=200-0111--=200" )
+            , test "largestSafeSnafu" <| \_ -> largestSafeSnafu (2 ^ 53) |> Expect.equal 5960464477539062
             ]
-        , skip <|
-            describe "part 2"
-                [ test "example" <| \_ -> example1 |> part2 |> Expect.equal 0
-                , skip <| test "input" <| \_ -> input |> part2 |> Expect.equal 0
-                ]
         ]
